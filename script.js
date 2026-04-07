@@ -1,9 +1,30 @@
 // ── 动作数据 ──────────────────────────────────────────
 var exercises = {
-  胸: ["上斜哑铃卧推", "上斜器械推胸", "蝴蝶机夹胸", "双杠臂屈伸"],
-  肩: ["哑铃侧平举", "绳索侧平举", "反向飞鸟", "器械推肩"],
-  背: ["宽握高位下拉", "对握高位下拉", "坐姿划船", "绳索面拉"],
-  臀: ["杠铃臀推", "罗马尼亚硬拉", "保加利亚分腿蹲", "绳索后踢", "坐姿髋外展"]
+  胸: [
+    { name: "上斜哑铃卧推", type: "主力" },
+    { name: "上斜器械推胸", type: "主力" },
+    { name: "蝴蝶机夹胸",   type: "孤立" },
+    { name: "双杠臂屈伸",   type: "辅助" }
+  ],
+  肩: [
+    { name: "哑铃侧平举", type: "主力" },
+    { name: "绳索侧平举", type: "孤立" },
+    { name: "反向飞鸟",   type: "辅助" },
+    { name: "器械推肩",   type: "主力" }
+  ],
+  背: [
+    { name: "宽握高位下拉", type: "主力" },
+    { name: "对握高位下拉", type: "主力" },
+    { name: "坐姿划船",     type: "主力" },
+    { name: "绳索面拉",     type: "辅助" }
+  ],
+  臀: [
+    { name: "杠铃臀推",       type: "主力" },
+    { name: "罗马尼亚硬拉",   type: "主力" },
+    { name: "保加利亚分腿蹲", type: "单侧" },
+    { name: "山羊挺身",       type: "辅助" },
+    { name: "坐姿髋外展",     type: "孤立" }
+  ]
 };
 
 // ── 状态 ──────────────────────────────────────────────
@@ -75,7 +96,8 @@ function renderExercises() {
   var list = document.getElementById("exercise-list");
   list.innerHTML = "";
 
-  exercises[muscle].forEach(function (name) {
+  exercises[muscle].forEach(function (ex) {
+    var name = ex.name;
     var row = document.createElement("div");
     row.className = "exercise-row";
 
