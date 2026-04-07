@@ -947,10 +947,29 @@ ul {
     flex: none;
   }
 
+  /* 统计区：收紧间距 */
+  .stats {
+    padding: 10px 16px;
+  }
+
+  .stats-grid {
+    gap: 6px;
+  }
+
+  .stat-item {
+    padding: 8px 4px;
+  }
+
+  /* 表单区：收紧间距 */
+  .form {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
   /* 表单行：改为单列堆叠 */
   .form-row {
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
   }
 
   /* form-field 在单列下占满整行 */
@@ -963,27 +982,29 @@ ul {
     display: flex;
     justify-content: center;
     width: 100%;
-    height: 46px;
     font-size: 14px;
     border-radius: var(--radius-sm);
     box-sizing: border-box;
+    padding: 10px 12px;
+    height: auto;
   }
 
-  /* 字体和输入框：16px 防止 iOS 自动缩放，统一高度 */
+  /* 字体和输入框：16px 防止 iOS 自动缩放 */
+  /* 不设固定 height，让 padding 自然撑开，避免日期框虚高 */
   input[type="text"],
   input[type="date"],
   select {
     font-size: 16px;
     padding: 10px 12px;
-    height: 46px;
+    height: auto;
+    min-height: 44px;
     box-sizing: border-box;
     width: 100%;
   }
 
   button#btn {
     font-size: 16px;
-    padding: 12px 20px;
-    height: 46px;
+    padding: 11px 20px;
     box-sizing: border-box;
   }
 
@@ -997,11 +1018,11 @@ ul {
     border-radius: var(--radius-md);
   }
 
-  /* 动作行：改为两行布局 */
+  /* 动作行：收紧内边距 */
   .exercise-row {
     flex-wrap: wrap;
     gap: 6px;
-    padding: 10px 12px;
+    padding: 8px 12px;
   }
 
   /* 第一行：checkbox + 动作名，占满整行 */
