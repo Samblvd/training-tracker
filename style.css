@@ -966,40 +966,51 @@ ul {
     gap: 10px;
   }
 
-  /* 表单行：改为单列堆叠 */
+  /* 表单行：两列并排，防溢出 */
   .form-row {
-    flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
 
-  /* form-field 在单列下占满整行 */
+  /* form-field 均分宽度，防内容撑破 */
   .form-field {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
   }
 
-  /* AI 助手按钮：全宽块级 */
+  /* AI 助手按钮：撑满 form-field */
   .ai-entry-btn {
     display: flex;
     justify-content: center;
     width: 100%;
-    font-size: 14px;
+    font-size: 13px;
     border-radius: var(--radius-sm);
     box-sizing: border-box;
-    padding: 10px 12px;
+    padding: 10px 6px;
     height: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* 字体和输入框：16px 防止 iOS 自动缩放 */
-  /* 不设固定 height，让 padding 自然撑开，避免日期框虚高 */
   input[type="text"],
   input[type="date"],
   select {
     font-size: 16px;
-    padding: 10px 12px;
+    padding: 10px 8px;
     height: auto;
     min-height: 44px;
     box-sizing: border-box;
     width: 100%;
+  }
+
+  /* 动作区：未勾选时折叠输入区域 */
+  .exercise-details {
+    display: none;
+  }
+
+  .exercise-row.is-checked .exercise-details {
+    display: flex;
   }
 
   button#btn {

@@ -83,11 +83,13 @@ document.getElementById("load-last-btn").onclick = function () {
     var ex = lastMap[cb.value];
     if (ex) {
       cb.checked = true;
+      row.classList.add('is-checked');
       row.querySelector(".input-weight").value = ex.weight || "";
       row.querySelector(".input-sets").value   = ex.sets   || "";
       row.querySelector(".input-reps").value   = ex.reps   || "";
     } else {
       cb.checked = false;
+      row.classList.remove('is-checked');
     }
   });
 };
@@ -109,6 +111,9 @@ function renderExercises() {
     var cb = document.createElement("input");
     cb.type = "checkbox";
     cb.value = name;
+    cb.addEventListener('change', function () {
+      row.classList.toggle('is-checked', this.checked);
+    });
     label.appendChild(cb);
     label.appendChild(document.createTextNode(name));
 
@@ -206,6 +211,7 @@ function loadRecordToForm(record) {
       var ex = exMap[cb.value];
       if (ex) {
         cb.checked = true;
+        row.classList.add('is-checked');
         row.querySelector(".input-weight").value = ex.weight || "";
         row.querySelector(".input-sets").value   = ex.sets   || "";
         row.querySelector(".input-reps").value   = ex.reps   || "";
@@ -232,11 +238,14 @@ function showToast(msg) {
 }
 
 function clearForm() {
-  document.getElementById("date").value = getTodayStr(); // 清空后重置为今天
+  document.getElementById("date").value = getTodayStr();
   document.getElementById("note").value = "";
-  document.querySelectorAll("#exercise-list input").forEach(function (input) {
-    if (input.type === "checkbox") input.checked = false;
-    else input.value = "";
+  document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
+    row.classList.remove('is-checked');
+    row.querySelectorAll("input").forEach(function (input) {
+      if (input.type === "checkbox") input.checked = false;
+      else input.value = "";
+    });
   });
 }
 
@@ -580,11 +589,13 @@ document.getElementById("ai-import-btn").onclick = function () {
     var ex = planMap[cb.value];
     if (ex) {
       cb.checked = true;
+      row.classList.add('is-checked');
       row.querySelector(".input-weight").value = (ex.weight === "—") ? "" : (ex.weight || "");
       row.querySelector(".input-sets").value   = ex.sets   || "";
       row.querySelector(".input-reps").value   = ex.reps   || "";
     } else {
       cb.checked = false;
+      row.classList.remove('is-checked');
     }
   });
 
