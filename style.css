@@ -947,17 +947,44 @@ ul {
     flex: none;
   }
 
-  /* 字体和输入框：16px 防止 iOS 自动缩放 */
+  /* 表单行：改为单列堆叠 */
+  .form-row {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* form-field 在单列下占满整行 */
+  .form-field {
+    width: 100%;
+  }
+
+  /* AI 助手按钮：全宽块级 */
+  .ai-entry-btn {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    height: 46px;
+    font-size: 14px;
+    border-radius: var(--radius-sm);
+    box-sizing: border-box;
+  }
+
+  /* 字体和输入框：16px 防止 iOS 自动缩放，统一高度 */
   input[type="text"],
   input[type="date"],
   select {
     font-size: 16px;
     padding: 10px 12px;
+    height: 46px;
+    box-sizing: border-box;
+    width: 100%;
   }
 
   button#btn {
     font-size: 16px;
     padding: 12px 20px;
+    height: 46px;
+    box-sizing: border-box;
   }
 
   /* 动作表头：手机端隐藏（改为两行布局） */
