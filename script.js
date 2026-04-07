@@ -117,13 +117,13 @@ function renderExercises() {
     label.appendChild(cb);
     label.appendChild(document.createTextNode(name));
 
-    // 右：重量 / 组数 / 次数
+    // 右：重量 / 组数 / 次数（带标签）
     var details = document.createElement("div");
     details.className = "exercise-details";
     details.innerHTML =
-      '<input type="number" class="input-weight" min="0">' +
-      '<input type="number" class="input-sets"   min="0">' +
-      '<input type="number" class="input-reps"   min="0">';
+      '<div class="ex-input-group"><span class="ex-input-label">KG</span><input type="number" class="input-weight" min="0"></div>' +
+      '<div class="ex-input-group"><span class="ex-input-label">组</span><input type="number" class="input-sets" min="0"></div>' +
+      '<div class="ex-input-group"><span class="ex-input-label">次</span><input type="number" class="input-reps" min="0"></div>';
 
     row.appendChild(label);
     row.appendChild(details);

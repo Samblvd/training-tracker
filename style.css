@@ -330,6 +330,15 @@ button#btn:active { transform: scale(0.98); }
   flex-shrink: 0;
 }
 
+/* 桌面端：包裹层透明，标签隐藏（有表头） */
+.ex-input-group {
+  display: contents;
+}
+
+.ex-input-label {
+  display: none;
+}
+
 .exercise-details input[type="number"] {
   width: 50px;
   padding: 5px 4px;
@@ -1004,13 +1013,43 @@ ul {
     width: 100%;
   }
 
-  /* 动作区：未勾选时折叠输入区域 */
+  /* 动作区：未勾选时折叠，勾选后展开为 grid 三列 */
   .exercise-details {
     display: none;
   }
 
   .exercise-row.is-checked .exercise-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  /* 每列：label 在上，input 在下 */
+  .ex-input-group {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .ex-input-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .exercise-details input[type="number"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: 15px;
+    padding: 8px 4px;
+    text-align: center;
   }
 
   button#btn {
@@ -1044,19 +1083,6 @@ ul {
     padding: 2px 0;
   }
 
-  /* 第二行：三个数字输入框撑满剩余空间 */
-  .exercise-details {
-    width: 100%;
-    gap: 8px;
-  }
-
-  .exercise-details input[type="number"] {
-    flex: 1;
-    width: auto;
-    font-size: 15px;
-    padding: 8px 6px;
-    text-align: center;
-  }
 
   /* 表单底部：备注和按钮堆叠 */
   .form-bottom {
