@@ -1,66 +1,113 @@
+var EXERCISE_NAME_ALIASES = {
+  "平板卧推": "平板杠铃卧推",
+  "哑铃平板卧推": "哑铃卧推",
+  "上斜器械推胸": "器械推胸",
+  "杠铃推肩": "杠铃推举",
+  "侧平举": "哑铃侧平举",
+  "绳索面拉": "面拉",
+  "高位下拉": "宽握下拉",
+  "分腿蹲": "保加利亚分腿蹲",
+  "单腿硬拉": "单腿罗马尼亚硬拉"
+};
+
+function createExercise(def) {
+  return {
+    name: def.name || "",
+    muscle_primary: def.muscle_primary || "",
+    muscle_secondary: Array.isArray(def.muscle_secondary) ? def.muscle_secondary : [],
+    movement: def.movement || "",
+    pattern: def.pattern || "",
+    equipment: def.equipment || "",
+    type: def.type || "",
+    unilateral: !!def.unilateral
+  };
+}
+
+function normalizeExerciseName(name) {
+  if (!name) return "";
+  return EXERCISE_NAME_ALIASES[name] || name;
+}
+
 var exerciseLibrary = {
   胸: [
-    { name: "平板卧推", pattern: "水平推", equipment: "杠铃" },
-    { name: "哑铃平板卧推", pattern: "水平推", equipment: "哑铃" },
-    { name: "上斜哑铃卧推", pattern: "上斜推", equipment: "哑铃" },
-    { name: "上斜器械推胸", pattern: "上斜推", equipment: "器械" },
-    { name: "蝴蝶机夹胸", pattern: "飞鸟", equipment: "器械" },
-    { name: "绳索夹胸", pattern: "飞鸟", equipment: "绳索" },
-    { name: "俯卧撑", pattern: "水平推", equipment: "自重" }
+    createExercise({ name: "平板杠铃卧推", muscle_primary: "胸", muscle_secondary: ["三头", "肩前束"], movement: "推", pattern: "水平推", equipment: "杠铃", type: "复合" }),
+    createExercise({ name: "上斜杠铃卧推", muscle_primary: "胸", muscle_secondary: ["三头", "肩前束"], movement: "推", pattern: "水平推", equipment: "杠铃", type: "复合" }),
+    createExercise({ name: "哑铃卧推", muscle_primary: "胸", muscle_secondary: ["三头", "肩前束"], movement: "推", pattern: "水平推", equipment: "哑铃", type: "复合" }),
+    createExercise({ name: "上斜哑铃卧推", muscle_primary: "胸", muscle_secondary: ["三头", "肩前束"], movement: "推", pattern: "水平推", equipment: "哑铃", type: "复合" }),
+    createExercise({ name: "俯卧撑", muscle_primary: "胸", muscle_secondary: ["三头", "肩前束"], movement: "推", pattern: "水平推", equipment: "徒手", type: "复合" }),
+    createExercise({ name: "器械推胸", muscle_primary: "胸", muscle_secondary: ["三头"], movement: "推", pattern: "水平推", equipment: "器械", type: "复合" }),
+    createExercise({ name: "蝴蝶机夹胸", muscle_primary: "胸", movement: "推", pattern: "夹胸", equipment: "器械", type: "孤立" }),
+    createExercise({ name: "绳索夹胸", muscle_primary: "胸", movement: "推", pattern: "夹胸", equipment: "绳索", type: "孤立" }),
+    createExercise({ name: "绳索下压", muscle_primary: "三头", movement: "推", pattern: "伸展", equipment: "绳索", type: "孤立" }),
+    createExercise({ name: "仰卧臂屈伸", muscle_primary: "三头", movement: "推", pattern: "伸展", equipment: "杠铃", type: "孤立" }),
+    createExercise({ name: "哑铃臂屈伸", muscle_primary: "三头", movement: "推", pattern: "伸展", equipment: "哑铃", type: "孤立", unilateral: true })
   ],
   肩: [
-    { name: "哑铃推肩", pattern: "垂直推", equipment: "哑铃" },
-    { name: "杠铃推肩", pattern: "垂直推", equipment: "杠铃" },
-    { name: "侧平举", pattern: "侧平举", equipment: "哑铃" },
-    { name: "绳索侧平举", pattern: "侧平举", equipment: "绳索" },
-    { name: "反向飞鸟", pattern: "后束", equipment: "器械" },
-    { name: "绳索面拉", pattern: "水平拉", equipment: "绳索" }
+    createExercise({ name: "杠铃推举", muscle_primary: "肩", muscle_secondary: ["三头"], movement: "推", pattern: "垂直推", equipment: "杠铃", type: "复合" }),
+    createExercise({ name: "哑铃推肩", muscle_primary: "肩", muscle_secondary: ["三头"], movement: "推", pattern: "垂直推", equipment: "哑铃", type: "复合" }),
+    createExercise({ name: "阿诺德推举", muscle_primary: "肩", muscle_secondary: ["三头"], movement: "推", pattern: "垂直推", equipment: "哑铃", type: "复合" }),
+    createExercise({ name: "器械推肩", muscle_primary: "肩", muscle_secondary: ["三头"], movement: "推", pattern: "垂直推", equipment: "器械", type: "复合" }),
+    createExercise({ name: "哑铃侧平举", muscle_primary: "肩", movement: "外展", pattern: "侧平举", equipment: "哑铃", type: "孤立" }),
+    createExercise({ name: "绳索侧平举", muscle_primary: "肩", movement: "外展", pattern: "侧平举", equipment: "绳索", type: "孤立", unilateral: true }),
+    createExercise({ name: "反向飞鸟", muscle_primary: "肩后束", muscle_secondary: ["背"], movement: "拉", pattern: "后束", equipment: "哑铃", type: "孤立" }),
+    createExercise({ name: "面拉", muscle_primary: "肩后束", muscle_secondary: ["背"], movement: "拉", pattern: "后束", equipment: "绳索", type: "孤立" })
   ],
   背: [
-    { name: "引体向上", pattern: "垂直拉", equipment: "自重" },
-    { name: "高位下拉", pattern: "垂直拉", equipment: "器械" },
-    { name: "坐姿划船", pattern: "水平拉", equipment: "器械" },
-    { name: "杠铃划船", pattern: "水平拉", equipment: "杠铃" },
-    { name: "哑铃划船", pattern: "水平拉", equipment: "哑铃" },
-    { name: "绳索面拉", pattern: "水平拉", equipment: "绳索" }
+    createExercise({ name: "杠铃划船", muscle_primary: "背", muscle_secondary: ["二头"], movement: "拉", pattern: "水平拉", equipment: "杠铃", type: "复合" }),
+    createExercise({ name: "哑铃划船", muscle_primary: "背", muscle_secondary: ["二头"], movement: "拉", pattern: "水平拉", equipment: "哑铃", type: "复合", unilateral: true }),
+    createExercise({ name: "坐姿划船", muscle_primary: "背", muscle_secondary: ["二头"], movement: "拉", pattern: "水平拉", equipment: "器械", type: "复合" }),
+    createExercise({ name: "T杠划船", muscle_primary: "背", muscle_secondary: ["二头"], movement: "拉", pattern: "水平拉", equipment: "杠铃", type: "复合" }),
+    createExercise({ name: "器械划船", muscle_primary: "背", muscle_secondary: ["二头"], movement: "拉", pattern: "水平拉", equipment: "器械", type: "复合" }),
+    createExercise({ name: "引体向上", muscle_primary: "背", muscle_secondary: ["二头"], movement: "拉", pattern: "垂直拉", equipment: "徒手", type: "复合" }),
+    createExercise({ name: "宽握下拉", muscle_primary: "背", muscle_secondary: ["二头"], movement: "拉", pattern: "垂直拉", equipment: "器械", type: "复合" }),
+    createExercise({ name: "窄握下拉", muscle_primary: "背", muscle_secondary: ["二头"], movement: "拉", pattern: "垂直拉", equipment: "器械", type: "复合" }),
+    createExercise({ name: "对握下拉", muscle_primary: "背", muscle_secondary: ["二头"], movement: "拉", pattern: "垂直拉", equipment: "器械", type: "复合" }),
+    createExercise({ name: "杠铃弯举", muscle_primary: "二头", movement: "拉", pattern: "弯举", equipment: "杠铃", type: "孤立" }),
+    createExercise({ name: "哑铃弯举", muscle_primary: "二头", movement: "拉", pattern: "弯举", equipment: "哑铃", type: "孤立", unilateral: true }),
+    createExercise({ name: "锤式弯举", muscle_primary: "二头", movement: "拉", pattern: "弯举", equipment: "哑铃", type: "孤立", unilateral: true }),
+    createExercise({ name: "绳索弯举", muscle_primary: "二头", movement: "拉", pattern: "弯举", equipment: "绳索", type: "孤立" }),
+    createExercise({ name: "面拉", muscle_primary: "肩后束", muscle_secondary: ["背"], movement: "拉", pattern: "后束", equipment: "绳索", type: "孤立" })
   ],
   臀腿: [
-    { name: "杠铃深蹲", pattern: "膝主导", equipment: "杠铃" },
-    { name: "腿举", pattern: "膝主导", equipment: "器械" },
-    { name: "坐姿腿屈伸", pattern: "膝主导", equipment: "器械" },
-    { name: "分腿蹲", pattern: "膝主导", equipment: "哑铃" },
-    { name: "罗马尼亚硬拉", pattern: "髋主导", equipment: "杠铃" },
-    { name: "单腿硬拉", pattern: "髋主导", equipment: "哑铃" },
-    { name: "臀桥", pattern: "髋主导", equipment: "自重" },
-    { name: "山羊挺身", pattern: "髋主导", equipment: "自重" },
-    { name: "坐姿腿弯举", pattern: "腿后侧", equipment: "器械" },
-    { name: "腿后举", pattern: "腿后侧", equipment: "器械" }
+    createExercise({ name: "杠铃深蹲", muscle_primary: "臀腿", muscle_secondary: ["核心"], movement: "蹲", pattern: "膝主导", equipment: "杠铃", type: "复合" }),
+    createExercise({ name: "史密斯深蹲", muscle_primary: "臀腿", movement: "蹲", pattern: "膝主导", equipment: "器械", type: "复合" }),
+    createExercise({ name: "腿举", muscle_primary: "臀腿", movement: "蹲", pattern: "膝主导", equipment: "器械", type: "复合" }),
+    createExercise({ name: "保加利亚分腿蹲", muscle_primary: "臀腿", movement: "蹲", pattern: "单腿", equipment: "哑铃", type: "复合", unilateral: true }),
+    createExercise({ name: "弓步蹲", muscle_primary: "臀腿", movement: "蹲", pattern: "单腿", equipment: "哑铃", type: "复合", unilateral: true }),
+    createExercise({ name: "坐姿腿屈伸", muscle_primary: "股四头", movement: "伸展", pattern: "孤立", equipment: "器械", type: "孤立" }),
+    createExercise({ name: "坐姿腿弯举", muscle_primary: "腿后侧", movement: "弯曲", pattern: "孤立", equipment: "器械", type: "孤立" }),
+    createExercise({ name: "俯卧腿弯举", muscle_primary: "腿后侧", movement: "弯曲", pattern: "孤立", equipment: "器械", type: "孤立" }),
+    createExercise({ name: "罗马尼亚硬拉", muscle_primary: "臀腿", muscle_secondary: ["下背"], movement: "拉", pattern: "髋主导", equipment: "杠铃", type: "复合" }),
+    createExercise({ name: "单腿罗马尼亚硬拉", muscle_primary: "臀腿", muscle_secondary: ["核心"], movement: "拉", pattern: "髋主导", equipment: "哑铃", type: "复合", unilateral: true }),
+    createExercise({ name: "臀桥", muscle_primary: "臀", movement: "推", pattern: "髋主导", equipment: "杠铃", type: "复合" }),
+    createExercise({ name: "站姿提踵", muscle_primary: "小腿", movement: "推", pattern: "踝关节", equipment: "器械", type: "孤立" }),
+    createExercise({ name: "坐姿提踵", muscle_primary: "小腿", movement: "推", pattern: "踝关节", equipment: "器械", type: "孤立" })
   ]
 };
 
 var defaultPlans = {
   胸: [
-    { name: "平板卧推", weight: "70", sets: "4", reps: "8" },
+    { name: "平板杠铃卧推", weight: "70", sets: "4", reps: "8" },
     { name: "上斜哑铃卧推", weight: "26", sets: "4", reps: "10" },
     { name: "蝴蝶机夹胸", weight: "35", sets: "3", reps: "12" },
     { name: "绳索夹胸", weight: "15", sets: "3", reps: "12" }
   ],
   肩: [
     { name: "哑铃推肩", weight: "20", sets: "4", reps: "10" },
-    { name: "侧平举", weight: "10", sets: "4", reps: "15" },
+    { name: "哑铃侧平举", weight: "10", sets: "4", reps: "15" },
     { name: "绳索侧平举", weight: "8", sets: "3", reps: "15" },
     { name: "反向飞鸟", weight: "10", sets: "3", reps: "15" }
   ],
   背: [
     { name: "引体向上", weight: "0", sets: "4", reps: "8" },
-    { name: "高位下拉", weight: "65", sets: "4", reps: "10" },
+    { name: "宽握下拉", weight: "65", sets: "4", reps: "10" },
     { name: "坐姿划船", weight: "60", sets: "4", reps: "10" },
-    { name: "绳索面拉", weight: "20", sets: "3", reps: "15" }
+    { name: "面拉", weight: "20", sets: "3", reps: "15" }
   ],
   臀腿: [
     { name: "杠铃深蹲", weight: "70", sets: "4", reps: "8" },
     { name: "罗马尼亚硬拉", weight: "60", sets: "4", reps: "10" },
-    { name: "分腿蹲", weight: "20", sets: "3", reps: "10" },
+    { name: "保加利亚分腿蹲", weight: "20", sets: "3", reps: "10" },
     { name: "坐姿腿弯举", weight: "45", sets: "3", reps: "12" }
   ]
 };
@@ -68,60 +115,60 @@ var defaultPlans = {
 var mockPlans = {
   胸: {
     增肌: [
-      { name: "平板卧推", weight: "70", sets: "4", reps: "8", note: "控制离心，顶峰停顿" },
+      { name: "平板杠铃卧推", weight: "70", sets: "4", reps: "8", note: "控制离心，顶峰停顿" },
       { name: "上斜哑铃卧推", weight: "26", sets: "4", reps: "10", note: "全程保持背部收紧" },
       { name: "蝴蝶机夹胸", weight: "35", sets: "3", reps: "15", note: "顶峰收缩 1 秒" },
       { name: "绳索夹胸", weight: "15", sets: "3", reps: "12", note: "上身前倾，感受胸部发力" }
     ],
     保持: [
-      { name: "平板卧推", weight: "60", sets: "3", reps: "10", note: "" },
+      { name: "平板杠铃卧推", weight: "60", sets: "3", reps: "10", note: "" },
       { name: "上斜哑铃卧推", weight: "22", sets: "3", reps: "10", note: "" },
       { name: "蝴蝶机夹胸", weight: "30", sets: "3", reps: "12", note: "" }
     ],
     恢复: [
-      { name: "上斜器械推胸", weight: "40", sets: "3", reps: "15", note: "轻重量，感受肌肉" },
+      { name: "器械推胸", weight: "40", sets: "3", reps: "15", note: "轻重量，感受肌肉" },
       { name: "蝴蝶机夹胸", weight: "25", sets: "3", reps: "15", note: "充分拉伸" }
     ]
   },
   肩: {
     增肌: [
       { name: "哑铃推肩", weight: "20", sets: "4", reps: "10", note: "不要耸肩" },
-      { name: "侧平举", weight: "10", sets: "4", reps: "15", note: "小臂略低于大臂" },
+      { name: "哑铃侧平举", weight: "10", sets: "4", reps: "15", note: "小臂略低于大臂" },
       { name: "绳索侧平举", weight: "8", sets: "3", reps: "15", note: "单侧交替" },
       { name: "反向飞鸟", weight: "10", sets: "3", reps: "15", note: "感受后束收缩" }
     ],
     保持: [
-      { name: "侧平举", weight: "10", sets: "3", reps: "12", note: "" },
+      { name: "哑铃侧平举", weight: "10", sets: "3", reps: "12", note: "" },
       { name: "哑铃推肩", weight: "18", sets: "3", reps: "10", note: "" },
       { name: "反向飞鸟", weight: "8", sets: "3", reps: "12", note: "" }
     ],
     恢复: [
-      { name: "侧平举", weight: "8", sets: "3", reps: "15", note: "轻重量，高次数" },
+      { name: "哑铃侧平举", weight: "8", sets: "3", reps: "15", note: "轻重量，高次数" },
       { name: "绳索侧平举", weight: "5", sets: "3", reps: "15", note: "" }
     ]
   },
   背: {
     增肌: [
       { name: "引体向上", weight: "0", sets: "4", reps: "8", note: "全程控制，顶峰收缩" },
-      { name: "高位下拉", weight: "65", sets: "4", reps: "10", note: "下拉至锁骨，挺胸" },
+      { name: "宽握下拉", weight: "65", sets: "4", reps: "10", note: "下拉至锁骨，挺胸" },
       { name: "坐姿划船", weight: "60", sets: "4", reps: "10", note: "顶峰收缩，背部发力" },
-      { name: "绳索面拉", weight: "20", sets: "3", reps: "15", note: "手肘与肩同高" }
+      { name: "面拉", weight: "20", sets: "3", reps: "15", note: "手肘与肩同高" }
     ],
     保持: [
-      { name: "高位下拉", weight: "60", sets: "3", reps: "10", note: "" },
+      { name: "宽握下拉", weight: "60", sets: "3", reps: "10", note: "" },
       { name: "坐姿划船", weight: "55", sets: "3", reps: "10", note: "" },
-      { name: "绳索面拉", weight: "18", sets: "3", reps: "12", note: "" }
+      { name: "面拉", weight: "18", sets: "3", reps: "12", note: "" }
     ],
     恢复: [
-      { name: "高位下拉", weight: "45", sets: "3", reps: "15", note: "轻重量，感受背部" },
-      { name: "绳索面拉", weight: "15", sets: "3", reps: "15", note: "" }
+      { name: "宽握下拉", weight: "45", sets: "3", reps: "15", note: "轻重量，感受背部" },
+      { name: "面拉", weight: "15", sets: "3", reps: "15", note: "" }
     ]
   },
   臀腿: {
     增肌: [
       { name: "杠铃深蹲", weight: "70", sets: "4", reps: "8", note: "髋膝同向，背部挺直" },
       { name: "罗马尼亚硬拉", weight: "60", sets: "4", reps: "10", note: "髋关节主导，背部挺直" },
-      { name: "分腿蹲", weight: "20", sets: "3", reps: "10", note: "单侧，控制下降速度" },
+      { name: "保加利亚分腿蹲", weight: "20", sets: "3", reps: "10", note: "单侧，控制下降速度" },
       { name: "坐姿腿弯举", weight: "45", sets: "3", reps: "12", note: "顶峰收缩，感受腿后侧" }
     ],
     保持: [
@@ -457,7 +504,7 @@ function normalizeRecord(record) {
 function normalizeExercise(exercise) {
   if (!exercise || !exercise.name) return null;
   return {
-    name: exercise.name,
+    name: normalizeExerciseName(exercise.name),
     weight: exercise.weight === undefined || exercise.weight === null ? "" : String(exercise.weight),
     sets: exercise.sets === undefined || exercise.sets === null ? "" : String(exercise.sets),
     reps: exercise.reps === undefined || exercise.reps === null ? "" : String(exercise.reps)
@@ -565,7 +612,10 @@ function applyPlanToEditor(muscle, plan, shouldShowSection) {
 
   var planMap = {};
   (plan || []).forEach(function (exercise) {
-    planMap[exercise.name] = normalizeExercise(exercise);
+    var normalized = normalizeExercise(exercise);
+    if (normalized) {
+      planMap[normalized.name] = normalized;
+    }
   });
 
   document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
