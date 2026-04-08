@@ -41,41 +41,37 @@
 
       <div class="form">
 
-        <div class="form-row">
-          <div class="form-field">
-            <label>日期</label>
-            <input type="date" id="date">
-          </div>
-          <div class="form-field">
-            <label>训练类型</label>
-            <select id="type">
-              <option>健身</option>
-              <option>足球</option>
-              <option>网球</option>
-            </select>
+        <!-- 隐藏字段：类型、部位、日期（JS 读取，默认今天） -->
+        <input type="hidden" id="type"   value="健身">
+        <input type="hidden" id="muscle" value="胸">
+        <input type="hidden" id="date">
+
+        <!-- 训练类型 pill 选择器 -->
+        <div class="prep-section">
+          <span class="prep-label">训练类型</span>
+          <div class="pill-group" id="type-pills">
+            <button class="pill active" data-value="健身">健身</button>
+            <button class="pill" data-value="足球">足球</button>
+            <button class="pill" data-value="网球">网球</button>
           </div>
         </div>
 
         <!-- 健身专属区域 -->
         <div id="gym-section">
 
-          <div class="form-row">
-            <div class="form-field">
-              <label>训练部位</label>
-              <select id="muscle">
-                <option>胸</option>
-                <option>肩</option>
-                <option>背</option>
-                <option>臀</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label>AI 助手</label>
-              <div>
-                <button type="button" class="ai-entry-btn" id="ai-open-btn">✦ AI 生成今日计划</button>
-              </div>
+          <!-- 训练部位 pill 选择器 -->
+          <div class="prep-section">
+            <span class="prep-label">训练部位</span>
+            <div class="pill-group" id="muscle-pills">
+              <button class="pill active" data-value="胸">胸</button>
+              <button class="pill" data-value="肩">肩</button>
+              <button class="pill" data-value="背">背</button>
+              <button class="pill" data-value="臀">臀</button>
             </div>
           </div>
+
+          <!-- AI 助手（全宽） -->
+          <button type="button" class="ai-entry-btn" id="ai-open-btn">✦ AI 生成今日计划</button>
 
           <button type="button" id="load-last-btn" class="load-last-btn" style="display:none;">
             带入上次该部位训练
@@ -91,12 +87,16 @@
 
         </div>
 
-        <div class="form-bottom">
-          <input type="text" id="note" placeholder="备注（可选）">
-          <div class="form-actions">
-            <button id="start-workout-btn" type="button">开始训练</button>
-            <button id="btn">添加记录</button>
-          </div>
+        <!-- 非健身：备注输入 -->
+        <div id="non-gym-note" style="display:none;">
+          <input type="text" id="note" placeholder="备注内容（必填）">
+        </div>
+
+        <!-- 主按钮区 -->
+        <div class="main-actions">
+          <button id="start-workout-btn" type="button" class="btn-primary-workout">开始训练</button>
+          <button id="btn" class="btn-secondary-add" style="display:none;">添加记录</button>
+          <button id="supplement-open-btn" type="button" class="supplement-link">＋ 补录过去训练</button>
         </div>
 
       </div>
@@ -106,7 +106,7 @@
     <!-- 右栏：训练记录列表 -->
     <div class="right-panel">
       <div class="panel-header">
-        <span>训练记录</span>
+        <span>历史记录</span>
         <span class="record-count" id="record-count"></span>
       </div>
       <ul id="list"></ul>
@@ -192,6 +192,44 @@
         <button class="modal-close" id="compare-modal-close">×</button>
       </div>
       <div class="modal-body" id="compare-body"></div>
+    </div>
+  </div>
+
+  <!-- 补录过去训练 Modal -->
+  <div id="supplement-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <span class="modal-title">补录过去训练</span>
+        <button class="modal-close" id="supplement-modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="ai-field">
+          <label>日期</label>
+          <input type="date" id="supplement-date">
+        </div>
+        <div class="ai-field">
+          <label>训练类型</label>
+          <select id="supplement-type">
+            <option>健身</option>
+            <option>足球</option>
+            <option>网球</option>
+          </select>
+        </div>
+        <div class="ai-field" id="supplement-muscle-field">
+          <label>训练部位</label>
+          <select id="supplement-muscle">
+            <option>胸</option>
+            <option>肩</option>
+            <option>背</option>
+            <option>臀</option>
+          </select>
+        </div>
+        <div class="ai-field">
+          <label>备注</label>
+          <input type="text" id="supplement-note" placeholder="选填">
+        </div>
+        <button id="supplement-save-btn" class="ai-generate-btn-style">保存记录</button>
+      </div>
     </div>
   </div>
 

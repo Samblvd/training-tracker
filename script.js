@@ -48,26 +48,51 @@ function getTodayStr() {
   return yyyy + "-" + mm + "-" + dd;
 }
 
-// 初始化：显示今日日期 + 填入输入框
+// 初始化：显示今日日期，隐藏日期字段填今天
 (function () {
   var today = getTodayStr();
-  // 顶部展示：YYYY / MM / DD
   document.getElementById("today-date").textContent = today.replace(/-/g, " / ");
-  // 日期输入框默认填今天
   document.getElementById("date").value = today;
+  // 补录日期默认填昨天
+  var d = new Date(); d.setDate(d.getDate() - 1);
+  var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), dd = String(d.getDate()).padStart(2,"0");
+  document.getElementById("supplement-date").value = y + "-" + m + "-" + dd;
 })();
 
-// ── 切换训练类型 ──────────────────────────────────────
-document.getElementById("type").onchange = function () {
-  document.getElementById("gym-section").style.display =
-    this.value === "健身" ? "block" : "none";
-};
+// ── 辅助：设置训练类型（更新隐藏字段 + pill 高亮 + 显示区域）
+function setType(value) {
+  document.getElementById("type").value = value;
+  document.querySelectorAll("#type-pills .pill").forEach(function (b) {
+    b.classList.toggle("active", b.dataset.value === value);
+  });
+  var isGym = value === "健身";
+  document.getElementById("gym-section").style.display    = isGym ? "block" : "none";
+  document.getElementById("non-gym-note").style.display   = isGym ? "none"  : "block";
+  document.getElementById("start-workout-btn").style.display = isGym ? "block" : "none";
+  document.getElementById("btn").style.display            = isGym ? "none"  : "block";
+}
 
-// ── 切换训练部位 ──────────────────────────────────────
-document.getElementById("muscle").onchange = function () {
+// ── 辅助：设置训练部位（更新隐藏字段 + pill 高亮 + 重新渲染动作）
+function setMuscle(value) {
+  document.getElementById("muscle").value = value;
+  document.querySelectorAll("#muscle-pills .pill").forEach(function (b) {
+    b.classList.toggle("active", b.dataset.value === value);
+  });
   renderExercises();
   updateLoadLastBtn();
-};
+}
+
+// ── Pill 点击：训练类型 ───────────────────────────────
+document.getElementById("type-pills").addEventListener("click", function (e) {
+  var btn = e.target.closest(".pill");
+  if (btn) setType(btn.dataset.value);
+});
+
+// ── Pill 点击：训练部位 ───────────────────────────────
+document.getElementById("muscle-pills").addEventListener("click", function (e) {
+  var btn = e.target.closest(".pill");
+  if (btn) setMuscle(btn.dataset.value);
+});
 
 // ── 带入上次训练 ──────────────────────────────────────
 document.getElementById("load-last-btn").onclick = function () {
@@ -196,12 +221,10 @@ document.getElementById("btn").onclick = function () {
 // ── 把记录填回表单（编辑用）──────────────────────────
 function loadRecordToForm(record) {
   document.getElementById("date").value = record.date;
-  document.getElementById("type").value = record.type;
+  setType(record.type);
 
   if (record.type === "健身") {
-    document.getElementById("gym-section").style.display = "block";
-    document.getElementById("muscle").value = record.muscle || "胸";
-    renderExercises();
+    setMuscle(record.muscle || "胸");
 
     var exMap = {};
     (record.exercises || []).forEach(function (ex) { exMap[ex.name] = ex; });
@@ -219,7 +242,6 @@ function loadRecordToForm(record) {
     });
     document.getElementById("note").value = record.note || "";
   } else {
-    document.getElementById("gym-section").style.display = "none";
     document.getElementById("note").value = record.content || "";
   }
 }
@@ -239,7 +261,8 @@ function showToast(msg) {
 
 function clearForm() {
   document.getElementById("date").value = getTodayStr();
-  document.getElementById("note").value = "";
+  var noteEl = document.getElementById("note");
+  if (noteEl) noteEl.value = "";
   document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
     row.classList.remove('is-checked');
     row.querySelectorAll("input").forEach(function (input) {
@@ -574,11 +597,8 @@ document.getElementById("ai-import-btn").onclick = function () {
   var plan   = (mockPlans[muscle] && mockPlans[muscle][goal]) || [];
 
   // 切换左栏到健身模式
-  document.getElementById("type").value = "健身";
-  document.getElementById("gym-section").style.display = "block";
-  document.getElementById("muscle").value = muscle;
-  renderExercises();
-  updateLoadLastBtn();
+  setType("健身");
+  setMuscle(muscle);
 
   // 勾选动作并填入数据
   var planMap = {};
@@ -709,10 +729,102 @@ document.getElementById("wm-next-ex-btn").onclick = function () {
   wmShow("working");
 };
 
-// ── 训练完成，返回 ────────────────────────────────────
+// ── 训练完成：自动记录 + 返回 ────────────────────────
 document.getElementById("wm-finish-btn").onclick = function () {
   clearInterval(wm.restTimer);
+  wmAutoSave();
   document.getElementById("workout-overlay").style.display = "none";
+  showToast("训练已记录 ✓");
+};
+
+// ── 自动保存本次训练到历史记录 ───────────────────────
+function wmAutoSave() {
+  if (wm.sessionLog.length === 0) return;
+
+  var muscle = document.getElementById("muscle").value;
+  var exList = wm.sessionLog
+    .filter(function (log) { return log.completedSets.length > 0; })
+    .map(function (log) {
+      var last = log.completedSets[log.completedSets.length - 1];
+      return {
+        name:   log.name,
+        weight: last.weight,
+        sets:   String(log.completedSets.length),
+        reps:   last.reps
+      };
+    });
+
+  if (exList.length === 0) return;
+
+  var record = {
+    date:      getTodayStr(),
+    type:      "健身",
+    muscle:    muscle,
+    exercises: exList,
+    note:      "",
+    content:   muscle + "：" + exList.map(function (ex) {
+      return ex.name + "（" + ex.weight + "kg " + ex.sets + "组 " + ex.reps + "次）";
+    }).join("、")
+  };
+
+  records.push(record);
+  localStorage.setItem("records", JSON.stringify(records));
+  rebuildList();
+  updateStats();
+  updateLoadLastBtn();
+}
+
+// ══════════════════════════════════════════════════════
+// 补录过去训练 Modal
+// ══════════════════════════════════════════════════════
+
+document.getElementById("supplement-open-btn").onclick = function () {
+  document.getElementById("supplement-modal").style.display = "flex";
+};
+
+document.getElementById("supplement-modal-close").onclick = function () {
+  document.getElementById("supplement-modal").style.display = "none";
+};
+
+document.getElementById("supplement-modal").onclick = function (e) {
+  if (e.target === this) this.style.display = "none";
+};
+
+// 补录类型切换：健身显示部位选择
+document.getElementById("supplement-type").onchange = function () {
+  document.getElementById("supplement-muscle-field").style.display =
+    this.value === "健身" ? "block" : "none";
+};
+
+// 保存补录记录
+document.getElementById("supplement-save-btn").onclick = function () {
+  var date = document.getElementById("supplement-date").value;
+  var type = document.getElementById("supplement-type").value;
+  var note = document.getElementById("supplement-note").value;
+
+  if (!date) { showToast("请填写日期"); return; }
+
+  var record = { date: date, type: type };
+
+  if (type === "健身") {
+    var muscle = document.getElementById("supplement-muscle").value;
+    record.muscle    = muscle;
+    record.exercises = [];
+    record.note      = note;
+    record.content   = muscle + " 训练" + (note ? " · " + note : "");
+  } else {
+    if (!note) { showToast("请填写备注内容"); return; }
+    record.content = note;
+  }
+
+  records.push(record);
+  localStorage.setItem("records", JSON.stringify(records));
+  rebuildList();
+  updateStats();
+
+  document.getElementById("supplement-modal").style.display = "none";
+  document.getElementById("supplement-note").value = "";
+  showToast("记录已补录 ✓");
 };
 
 // ── 核心渲染：根据状态更新面板 ───────────────────────
