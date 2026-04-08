@@ -64,10 +64,6 @@ function getTodayStr() {
   var today = getTodayStr();
   document.getElementById("today-date").textContent = today.replace(/-/g, " / ");
   document.getElementById("date").value = today;
-  // 补录日期默认填昨天
-  var d = new Date(); d.setDate(d.getDate() - 1);
-  var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), dd = String(d.getDate()).padStart(2,"0");
-  document.getElementById("supplement-date").value = y + "-" + m + "-" + dd;
 })();
 
 // ── 辅助：设置训练类型（更新隐藏字段 + pill 高亮 + 显示区域）
@@ -916,59 +912,6 @@ document.getElementById("import-file").onchange = function (e) {
     e.target.value = "";
   };
   reader.readAsText(file);
-};
-
-// ══════════════════════════════════════════════════════
-// 补录过去训练 Modal
-// ══════════════════════════════════════════════════════
-
-document.getElementById("supplement-open-btn").onclick = function () {
-  document.getElementById("supplement-modal").style.display = "flex";
-};
-
-document.getElementById("supplement-modal-close").onclick = function () {
-  document.getElementById("supplement-modal").style.display = "none";
-};
-
-document.getElementById("supplement-modal").onclick = function (e) {
-  if (e.target === this) this.style.display = "none";
-};
-
-// 补录类型切换：健身显示部位选择
-document.getElementById("supplement-type").onchange = function () {
-  document.getElementById("supplement-muscle-field").style.display =
-    this.value === "健身" ? "block" : "none";
-};
-
-// 保存补录记录
-document.getElementById("supplement-save-btn").onclick = function () {
-  var date = document.getElementById("supplement-date").value;
-  var type = document.getElementById("supplement-type").value;
-  var note = document.getElementById("supplement-note").value;
-
-  if (!date) { showToast("请填写日期"); return; }
-
-  var record = { date: date, type: type };
-
-  if (type === "健身") {
-    var muscle = document.getElementById("supplement-muscle").value;
-    record.muscle    = muscle;
-    record.exercises = [];
-    record.note      = note;
-    record.content   = muscle + " 训练" + (note ? " · " + note : "");
-  } else {
-    if (!note) { showToast("请填写备注内容"); return; }
-    record.content = note;
-  }
-
-  records.push(record);
-  localStorage.setItem("records", JSON.stringify(records));
-  rebuildList();
-  updateStats();
-
-  document.getElementById("supplement-modal").style.display = "none";
-  document.getElementById("supplement-note").value = "";
-  showToast("记录已补录 ✓");
 };
 
 // ── 核心渲染：根据状态更新面板 ───────────────────────

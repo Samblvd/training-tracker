@@ -1048,6 +1048,23 @@ ul {
   letter-spacing: 0.6px;
 }
 
+/* 日期选择器 */
+.date-input {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  outline: none;
+  box-sizing: border-box;
+}
+.date-input:focus {
+  border-color: var(--blue);
+}
+
 /* pill 按钮组 */
 .pill-group {
   display: flex;
