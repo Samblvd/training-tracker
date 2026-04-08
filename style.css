@@ -1002,7 +1002,7 @@ ul {
 .btn-primary-workout:hover  { background: #047857; }
 .btn-primary-workout:active { transform: scale(0.98); }
 
-/* 添加记录：次级（非健身时用） */
+/* 补录训练：次级按钮 */
 .btn-secondary-add {
   padding: 9px 18px;
   font-size: 13px;

@@ -26,19 +26,16 @@ var exercises = {
     { name: "绳索面拉", category: "背", pattern: "水平拉", equipment: "绳索" }
   ],
   臀: [
-    { name: "杠铃深蹲",     category: "臀腿", pattern: "深蹲",   equipment: "杠铃" },
-    { name: "腿举",         category: "臀腿", pattern: "深蹲",   equipment: "器械" },
-    { name: "坐姿腿屈伸",   category: "臀腿", pattern: "孤立",   equipment: "器械" },
-    { name: "杠铃臀推",     category: "臀腿", pattern: "臀推",   equipment: "杠铃" },
-    { name: "罗马尼亚硬拉", category: "臀腿", pattern: "髋铰链", equipment: "杠铃" },
-    { name: "单腿硬拉",     category: "臀腿", pattern: "髋铰链", equipment: "哑铃" },
-    { name: "臀桥",         category: "臀腿", pattern: "臀推",   equipment: "自重" },
-    { name: "山羊挺身",     category: "臀腿", pattern: "髋铰链", equipment: "自重" },
-    { name: "保加利亚分腿蹲", category: "臀腿", pattern: "单侧",  equipment: "哑铃" },
-    { name: "分腿蹲",       category: "臀腿", pattern: "单侧",   equipment: "哑铃" },
-    { name: "行走弓步",     category: "臀腿", pattern: "单侧",   equipment: "哑铃" },
-    { name: "腿后举",       category: "臀腿", pattern: "孤立",   equipment: "器械" },
-    { name: "坐姿腿弯举",   category: "臀腿", pattern: "孤立",   equipment: "器械" }
+    { name: "杠铃深蹲",   category: "臀腿", pattern: "膝主导", equipment: "杠铃" },
+    { name: "腿举",       category: "臀腿", pattern: "膝主导", equipment: "器械" },
+    { name: "坐姿腿屈伸", category: "臀腿", pattern: "膝主导", equipment: "器械" },
+    { name: "分腿蹲",     category: "臀腿", pattern: "膝主导", equipment: "哑铃" },
+    { name: "罗马尼亚硬拉", category: "臀腿", pattern: "髋主导", equipment: "杠铃" },
+    { name: "单腿硬拉",   category: "臀腿", pattern: "髋主导", equipment: "哑铃" },
+    { name: "臀桥",       category: "臀腿", pattern: "髋主导", equipment: "自重" },
+    { name: "山羊挺身",   category: "臀腿", pattern: "髋主导", equipment: "自重" },
+    { name: "坐姿腿弯举", category: "臀腿", pattern: "腿后侧", equipment: "器械" },
+    { name: "腿后举",     category: "臀腿", pattern: "腿后侧", equipment: "器械" }
   ]
 };
 
@@ -80,10 +77,11 @@ function setType(value) {
     b.classList.toggle("active", b.dataset.value === value);
   });
   var isGym = value === "健身";
-  document.getElementById("gym-section").style.display    = isGym ? "flex" : "none";
-  document.getElementById("non-gym-note").style.display   = isGym ? "none"  : "block";
+  document.getElementById("gym-section").style.display       = isGym ? "flex"  : "none";
+  document.getElementById("non-gym-note").style.display      = isGym ? "none"  : "block";
   document.getElementById("start-workout-btn").style.display = isGym ? "block" : "none";
-  document.getElementById("btn").style.display            = isGym ? "none"  : "block";
+  // 健身：补录按钮也显示；非健身：只显示补录按钮
+  document.getElementById("btn").style.display               = "block";
 }
 
 // ── 辅助：设置训练部位（更新隐藏字段 + pill 高亮 + 重新渲染动作）
@@ -219,7 +217,7 @@ document.getElementById("btn").onclick = function () {
   if (editingIndex >= 0) {
     records[editingIndex] = record;
     editingIndex = -1;
-    document.getElementById("btn").textContent = "添加记录";
+    document.getElementById("btn").textContent = "补录训练";
   } else {
     records.push(record);
   }
@@ -330,6 +328,7 @@ function addToList(record, index) {
     editingIndex = parseInt(li.getAttribute("data-index"));
     loadRecordToForm(records[editingIndex]);
     document.getElementById("btn").textContent = "保存修改";
+    document.getElementById("btn").style.display = "block";
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -341,7 +340,7 @@ function addToList(record, index) {
     var i = parseInt(li.getAttribute("data-index"));
     if (editingIndex === i) {
       editingIndex = -1;
-      document.getElementById("btn").textContent = "添加记录";
+      document.getElementById("btn").textContent = "补录训练";
       clearForm();
     } else if (editingIndex > i) {
       editingIndex--;
@@ -494,19 +493,19 @@ var mockPlans = {
   },
   臀: {
     增肌: [
-      { name: "杠铃深蹲",       weight: "70", sets: "4", reps: "8",  note: "髋膝同向，背部挺直" },
-      { name: "杠铃臀推",       weight: "80", sets: "4", reps: "10", note: "顶峰收缩，挤压臀部" },
-      { name: "罗马尼亚硬拉",   weight: "60", sets: "4", reps: "10", note: "髋关节主导，背部挺直" },
-      { name: "保加利亚分腿蹲", weight: "20", sets: "3", reps: "10", note: "单侧，控制下降速度" }
+      { name: "杠铃深蹲",   weight: "70", sets: "4", reps: "8",  note: "髋膝同向，背部挺直" },
+      { name: "罗马尼亚硬拉", weight: "60", sets: "4", reps: "10", note: "髋关节主导，背部挺直" },
+      { name: "分腿蹲",     weight: "20", sets: "3", reps: "10", note: "单侧，控制下降速度" },
+      { name: "坐姿腿弯举", weight: "45", sets: "3", reps: "12", note: "顶峰收缩，感受腿后侧" }
     ],
     保持: [
-      { name: "杠铃臀推",       weight: "70", sets: "3", reps: "10", note: "" },
-      { name: "罗马尼亚硬拉",   weight: "50", sets: "3", reps: "10", note: "" },
-      { name: "坐姿腿弯举",     weight: "40", sets: "3", reps: "12", note: "" }
+      { name: "腿举",       weight: "100", sets: "3", reps: "12", note: "" },
+      { name: "罗马尼亚硬拉", weight: "50", sets: "3", reps: "10", note: "" },
+      { name: "坐姿腿弯举", weight: "35", sets: "3", reps: "12", note: "" }
     ],
     恢复: [
-      { name: "臀桥",           weight: "0",  sets: "3", reps: "15", note: "轻重量，感受发力" },
-      { name: "坐姿腿弯举",     weight: "30", sets: "3", reps: "15", note: "慢速，充分拉伸" }
+      { name: "臀桥",       weight: "0",  sets: "3", reps: "15", note: "感受臀部收缩" },
+      { name: "坐姿腿屈伸", weight: "30", sets: "3", reps: "15", note: "轻重量，充分伸展" }
     ]
   }
 };
@@ -783,6 +782,7 @@ document.getElementById("wm-done-btn").onclick = function () {
   });
 
   wm.setDone++;
+  wmAutoSave();  // 每组完成后立即写入，防止意外丢失
 
   if (wm.setDone >= ex.sets) {
     clearInterval(wm.restTimer);
@@ -815,11 +815,8 @@ document.getElementById("wm-finish-btn").onclick = function () {
   showToast("训练已记录 ✓");
 };
 
-// ── 自动保存本次训练到历史记录 ───────────────────────
+// ── 自动保存本次训练到历史记录（每组完成后调用，覆盖当天同部位记录）
 function wmAutoSave() {
-  if (wm.sessionLog.length === 0) return;
-
-  var muscle = document.getElementById("muscle").value;
   var exList = wm.sessionLog
     .filter(function (log) { return log.completedSets.length > 0; })
     .map(function (log) {
@@ -834,8 +831,10 @@ function wmAutoSave() {
 
   if (exList.length === 0) return;
 
-  var record = {
-    date:      getTodayStr(),
+  var muscle  = document.getElementById("muscle").value;
+  var today   = getTodayStr();
+  var record  = {
+    date:      today,
     type:      "健身",
     muscle:    muscle,
     exercises: exList,
@@ -845,7 +844,20 @@ function wmAutoSave() {
     }).join("、")
   };
 
-  records.push(record);
+  // 覆盖当天同部位记录，否则追加
+  var idx = -1;
+  for (var i = 0; i < records.length; i++) {
+    if (records[i].date === today && records[i].type === "健身" && records[i].muscle === muscle && records[i]._wmSession) {
+      idx = i; break;
+    }
+  }
+  record._wmSession = true;  // 标记为训练中模式生成的记录
+  if (idx >= 0) {
+    records[idx] = record;
+  } else {
+    records.push(record);
+  }
+
   localStorage.setItem("records", JSON.stringify(records));
   rebuildList();
   updateStats();
