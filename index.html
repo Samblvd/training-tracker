@@ -7,12 +7,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <div class="app">
-
-    <!-- 左栏：概览 + 输入 -->
     <div class="left-panel">
-
       <div class="left-header">
         <h1>训练记录</h1>
         <span class="today-date" id="today-date"></span>
@@ -22,25 +18,20 @@
         <div class="stats-grid">
           <div class="stat-item">
             <span class="count" id="total">0</span>
-            <span class="label">全部</span>
+            <span class="label">全部训练</span>
           </div>
           <div class="stat-item">
-            <span class="count" id="count-健身">0</span>
-            <span class="label">健身</span>
+            <span class="count" id="count-week">0</span>
+            <span class="label">本周</span>
           </div>
           <div class="stat-item">
-            <span class="count" id="count-足球">0</span>
-            <span class="label">足球</span>
-          </div>
-          <div class="stat-item">
-            <span class="count" id="count-网球">0</span>
-            <span class="label">网球</span>
+            <span class="count" id="count-month">0</span>
+            <span class="label">本月</span>
           </div>
         </div>
       </div>
 
-      <!-- 草稿恢复横条（有草稿时显示） -->
-      <div id="draft-banner" style="display:none;" class="draft-banner">
+      <div id="draft-banner" class="draft-banner" style="display:none;">
         <span id="draft-banner-text">继续上次训练</span>
         <div class="draft-banner-actions">
           <button id="draft-resume-btn" class="draft-resume-btn">继续</button>
@@ -49,127 +40,92 @@
       </div>
 
       <div class="form">
-
-        <!-- 隐藏状态字段（JS 管理） -->
-        <input type="hidden" id="type"   value="健身">
+        <input type="hidden" id="type" value="健身">
         <input type="hidden" id="muscle" value="胸">
-        <input type="hidden" id="date">
 
-        <!-- 训练类型 pill 选择器 -->
-        <div class="prep-section">
-          <span class="prep-label">训练类型</span>
-          <div class="pill-group" id="type-pills">
-            <button class="pill active" data-value="健身">健身</button>
-            <button class="pill" data-value="足球">足球</button>
-            <button class="pill" data-value="网球">网球</button>
-          </div>
-        </div>
-
-        <!-- 健身专属区域 -->
-        <div id="gym-section">
-
-          <!-- 训练部位 pill 选择器 -->
+        <div class="home-core">
           <div class="prep-section">
             <span class="prep-label">训练部位</span>
             <div class="pill-group" id="muscle-pills">
               <button class="pill active" data-value="胸">胸</button>
               <button class="pill" data-value="肩">肩</button>
               <button class="pill" data-value="背">背</button>
-              <button class="pill" data-value="臀">臀</button>
+              <button class="pill" data-value="臀腿">臀腿</button>
             </div>
           </div>
 
-          <!-- AI + 手动编排（一行两按钮） -->
+          <div class="main-actions">
+            <button id="start-workout-btn" type="button" class="btn-primary-workout">开始训练</button>
+          </div>
+
           <div class="prep-action-row">
-            <button type="button" class="ai-entry-btn" id="ai-open-btn">✦ AI 生成今日计划</button>
-            <button type="button" class="manual-btn" id="manual-arrange-btn">手动编排</button>
+            <button type="button" class="ai-entry-btn" id="ai-open-btn">AI 生成今日计划</button>
+            <button type="button" class="manual-btn" id="manual-arrange-btn">自己选动作</button>
           </div>
+        </div>
 
-          <!-- 动作区（按需展开，默认折叠） -->
-          <div id="exercise-section" style="display:none;">
+        <div id="exercise-section" class="exercise-section" style="display:none;">
+          <div class="exercise-section-head">
+            <span class="prep-label">动作计划</span>
             <button type="button" id="load-last-btn" class="load-last-btn" style="display:none;">
-              带入上次该部位训练
+              带入上次同部位训练
             </button>
-            <div class="exercise-table-header">
-              <span class="ex-header-name">动作</span>
-              <span class="ex-header-cell">重量(kg)</span>
-              <span class="ex-header-cell">组数</span>
-              <span class="ex-header-cell">次数</span>
-            </div>
-            <div id="exercise-list" class="exercise-list"></div>
           </div>
-
+          <div class="exercise-table-header">
+            <span class="ex-header-name">动作</span>
+            <span class="ex-header-cell">重量(kg)</span>
+            <span class="ex-header-cell">组数</span>
+            <span class="ex-header-cell">次数</span>
+          </div>
+          <div id="exercise-list" class="exercise-list"></div>
         </div>
 
-        <!-- 非健身：备注输入 -->
-        <div id="non-gym-note" style="display:none;">
-          <input type="text" id="note" placeholder="备注内容（必填）">
-        </div>
-
-        <!-- 主按钮区 -->
-        <div class="main-actions">
-          <!-- 健身训练模式主入口 -->
-          <button id="start-workout-btn" type="button" class="btn-primary-workout">开始训练</button>
-          <!-- 非健身今日记录 / 补录保存（JS 控制显示） -->
-          <button id="btn" class="btn-primary-workout" style="display:none;">记录今天</button>
-        </div>
-
-        <!-- 补录入口（次级，底部） -->
         <div class="backfill-entry-row">
           <button id="backfill-open-btn" class="backfill-link">＋ 补录过去训练记录</button>
         </div>
 
-        <!-- 补录模式区（展开时显示日期选择） -->
         <div id="backfill-section" class="backfill-section" style="display:none;">
           <div class="backfill-header">
-            <span class="prep-label">补录日期</span>
+            <span class="prep-label">补录训练</span>
             <button id="backfill-cancel-btn" class="backfill-cancel">取消</button>
           </div>
           <input type="date" id="backfill-date" class="date-input">
+          <button id="backfill-save-btn" class="btn-secondary-save">保存补录</button>
         </div>
-
       </div>
-
     </div>
 
-    <!-- 右栏：训练记录列表 -->
     <div class="right-panel">
       <div class="panel-header">
         <span>历史记录</span>
         <div class="panel-header-right">
           <span class="record-count" id="record-count"></span>
           <button id="export-btn" class="data-btn" title="导出数据">导出</button>
-          <label id="import-label" class="data-btn" title="导入数据">导入
+          <label class="data-btn" title="导入数据">导入
             <input type="file" id="import-file" accept=".json" style="display:none;">
           </label>
         </div>
       </div>
       <ul id="list"></ul>
     </div>
-
   </div>
 
-  <!-- AI 生成训练计划 Modal -->
   <div id="ai-modal" class="modal-overlay" style="display:none;">
     <div class="modal-panel">
-
       <div class="modal-header">
-        <span class="modal-title">✦ AI 生成训练计划</span>
-        <button class="modal-close" id="ai-modal-close">×</button>
+        <span class="modal-title">AI 生成今日计划</span>
+        <button class="modal-close" id="ai-modal-close" type="button">×</button>
       </div>
 
       <div class="modal-body">
-
-        <!-- 输入选项 -->
         <div class="ai-form">
-
           <div class="ai-field">
             <label>训练部位</label>
             <div class="ai-options" id="ai-muscle">
               <button class="opt-btn active" data-value="胸">胸</button>
               <button class="opt-btn" data-value="肩">肩</button>
               <button class="opt-btn" data-value="背">背</button>
-              <button class="opt-btn" data-value="臀">臀</button>
+              <button class="opt-btn" data-value="臀腿">臀腿</button>
             </div>
           </div>
 
@@ -199,101 +155,115 @@
             </div>
           </div>
 
-          <button id="ai-generate-btn">生成计划</button>
-
+          <button id="ai-generate-btn" type="button">生成计划</button>
         </div>
 
-        <!-- 结果区域（默认隐藏） -->
         <div id="ai-result" style="display:none;">
           <div class="ai-result-header">
             <span id="ai-result-title"></span>
           </div>
           <div id="ai-result-list" class="ai-result-list"></div>
           <div class="ai-result-actions">
-            <button id="ai-import-btn">导入到今日训练</button>
-            <button id="ai-regen-btn" class="btn-ghost">重新生成</button>
+            <button id="ai-import-btn" type="button">导入到今日训练</button>
+            <button id="ai-regen-btn" type="button" class="btn-ghost">重新生成</button>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 
-  <!-- 对比上次训练 Modal -->
   <div id="compare-modal" class="modal-overlay" style="display:none;">
     <div class="modal-panel">
       <div class="modal-header">
         <span class="modal-title cmp-title" id="compare-title">对比上次训练</span>
-        <button class="modal-close" id="compare-modal-close">×</button>
+        <button class="modal-close" id="compare-modal-close" type="button">×</button>
       </div>
       <div class="modal-body" id="compare-body"></div>
     </div>
   </div>
 
-  <!-- 训练中模式面板 -->
   <div id="workout-overlay" class="workout-overlay" style="display:none;">
     <div class="wm-panel">
-
       <div class="wm-header">
         <div class="wm-header-info">
           <span class="wm-header-muscle" id="wm-header-muscle"></span>
           <span class="wm-header-ex" id="wm-header-ex"></span>
         </div>
-        <button id="wm-exit-btn" class="wm-exit-btn">退出</button>
+        <button id="wm-exit-btn" class="wm-exit-btn" type="button">退出</button>
       </div>
 
       <div class="wm-body">
-
-        <!-- working / resting 状态 -->
-        <div id="wm-main">
-          <div class="wm-ex-name" id="wm-ex-name"></div>
-          <div class="wm-target" id="wm-target"></div>
-          <div class="wm-progress" id="wm-progress"></div>
-
-          <!-- 已完成组记录 -->
-          <div id="wm-sets-done" class="wm-sets-done"></div>
-
-          <!-- 本组输入：重量 + 次数（主字段） -->
-          <div id="wm-set-inputs" class="wm-set-inputs">
-            <div class="wm-set-field">
-              <label class="wm-set-label">重量 kg</label>
-              <input type="number" id="wm-input-weight" class="wm-input" min="0">
-            </div>
-            <div class="wm-set-field">
-              <label class="wm-set-label">次数</label>
-              <input type="number" id="wm-input-reps" class="wm-input" min="0">
-            </div>
-          </div>
-          <!-- 休息时长：次级字段 -->
-          <div id="wm-rest-config" class="wm-rest-config">
-            休息时长 <input type="number" id="wm-input-rest" class="wm-rest-input" min="0"> 秒
+        <div id="wm-working" class="wm-state">
+          <div class="wm-current-card">
+            <div class="wm-ex-name" id="wm-ex-name"></div>
+            <div class="wm-target" id="wm-target"></div>
+            <div class="wm-progress" id="wm-progress"></div>
           </div>
 
-          <button id="wm-done-btn" class="wm-done-btn">完成本组</button>
+          <div class="wm-section">
+            <div class="wm-section-label">已完成组</div>
+            <div id="wm-sets-done" class="wm-sets-done"></div>
+          </div>
 
-          <!-- 休息倒计时（在 wm-main 内展开，不切换大区块） -->
-          <div id="wm-rest-area" class="wm-rest-area" style="display:none;">
+          <div class="wm-section wm-input-card">
+            <div class="wm-section-head">
+              <span class="wm-section-label">本组记录</span>
+              <div id="wm-rest-config" class="wm-rest-config">
+                休息 <input type="number" id="wm-input-rest" class="wm-rest-input" min="0"> 秒
+              </div>
+            </div>
+
+            <div id="wm-set-inputs" class="wm-set-inputs">
+              <div class="wm-set-field">
+                <label class="wm-set-label">重量 kg</label>
+                <input type="number" id="wm-input-weight" class="wm-input" min="0">
+              </div>
+              <div class="wm-set-field">
+                <label class="wm-set-label">次数</label>
+                <input type="number" id="wm-input-reps" class="wm-input" min="0">
+              </div>
+            </div>
+          </div>
+
+          <div class="wm-footer-actions">
+            <button id="wm-done-btn" class="wm-done-btn" type="button">完成本组</button>
+            <div class="wm-secondary-actions">
+              <button id="wm-skip-ex-btn" class="wm-secondary-btn" type="button">跳过当前动作</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="wm-resting" class="wm-state" style="display:none;">
+          <div class="wm-rest-card">
             <div class="wm-rest-label" id="wm-rest-label">休息中</div>
+            <div class="wm-rest-ex-name" id="wm-rest-ex-name"></div>
             <div class="wm-timer" id="wm-timer">01:30</div>
-            <button id="wm-skip-btn" class="wm-skip-btn">跳过</button>
+            <div class="wm-rest-next" id="wm-rest-next">下一组 第 2 / 4 组</div>
+          </div>
+
+          <div class="wm-footer-actions">
+            <button id="wm-skip-btn" class="wm-done-btn" type="button">跳过休息</button>
+            <div class="wm-secondary-actions">
+              <button id="wm-extend-rest-btn" class="wm-secondary-btn" type="button">延长 30 秒</button>
+              <button id="wm-skip-ex-rest-btn" class="wm-secondary-btn" type="button">跳过当前动作</button>
+            </div>
           </div>
         </div>
 
-        <!-- ex-done 状态（1.5s 后自动跳转） -->
-        <div id="wm-ex-done" style="display:none;">
-          <div class="wm-done-icon">✓</div>
-          <div class="wm-done-msg" id="wm-done-msg"></div>
+        <div id="wm-ex-done" class="wm-state wm-message-state" style="display:none;">
+          <div class="wm-done-icon">完成</div>
+          <div class="wm-done-msg">当前动作已完成</div>
+          <div class="wm-done-title" id="wm-done-msg"></div>
           <div class="wm-next-hint" id="wm-next-hint"></div>
-          <button id="wm-next-ex-btn" class="wm-done-btn">立即进入</button>
+          <button id="wm-next-ex-btn" class="wm-done-btn" type="button">进入下一动作</button>
         </div>
 
-        <!-- all-done 状态 -->
-        <div id="wm-all-done" style="display:none;">
-          <div class="wm-done-icon">🎉</div>
-          <div class="wm-done-msg">训练完成！</div>
-          <button id="wm-finish-btn" class="wm-done-btn">返回记录</button>
+        <div id="wm-all-done" class="wm-state wm-message-state" style="display:none;">
+          <div class="wm-done-icon">完成</div>
+          <div class="wm-done-msg">训练完成</div>
+          <div class="wm-all-summary" id="wm-all-summary"></div>
+          <button id="wm-finish-btn" class="wm-done-btn" type="button">保存并返回记录</button>
         </div>
-
       </div>
     </div>
   </div>
