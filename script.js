@@ -1,31 +1,44 @@
 // ── 动作数据 ──────────────────────────────────────────
 var exercises = {
   胸: [
-    { name: "平板卧推",     type: "主力" },
-    { name: "上斜哑铃卧推", type: "主力" },
-    { name: "上斜器械推胸", type: "主力" },
-    { name: "蝴蝶机夹胸",   type: "孤立" },
-    { name: "双杠臂屈伸",   type: "辅助" }
+    { name: "平板卧推",     category: "胸", pattern: "水平推", equipment: "杠铃" },
+    { name: "哑铃平板卧推", category: "胸", pattern: "水平推", equipment: "哑铃" },
+    { name: "上斜哑铃卧推", category: "胸", pattern: "上斜推", equipment: "哑铃" },
+    { name: "上斜器械推胸", category: "胸", pattern: "上斜推", equipment: "器械" },
+    { name: "蝴蝶机夹胸",   category: "胸", pattern: "飞鸟",   equipment: "器械" },
+    { name: "绳索夹胸",     category: "胸", pattern: "飞鸟",   equipment: "绳索" },
+    { name: "俯卧撑",       category: "胸", pattern: "水平推", equipment: "自重" }
   ],
   肩: [
-    { name: "哑铃侧平举", type: "主力" },
-    { name: "绳索侧平举", type: "孤立" },
-    { name: "反向飞鸟",   type: "辅助" },
-    { name: "器械推肩",   type: "主力" }
+    { name: "哑铃推肩",   category: "肩", pattern: "垂直推", equipment: "哑铃" },
+    { name: "杠铃推肩",   category: "肩", pattern: "垂直推", equipment: "杠铃" },
+    { name: "侧平举",     category: "肩", pattern: "侧平举", equipment: "哑铃" },
+    { name: "绳索侧平举", category: "肩", pattern: "侧平举", equipment: "绳索" },
+    { name: "反向飞鸟",   category: "肩", pattern: "后束",   equipment: "器械" },
+    { name: "绳索面拉",   category: "肩", pattern: "水平拉", equipment: "绳索" }
   ],
   背: [
-    { name: "引体向上",     type: "主力" },
-    { name: "宽握高位下拉", type: "主力" },
-    { name: "对握高位下拉", type: "主力" },
-    { name: "坐姿划船",     type: "主力" },
-    { name: "绳索面拉",     type: "辅助" }
+    { name: "引体向上", category: "背", pattern: "垂直拉", equipment: "自重" },
+    { name: "高位下拉", category: "背", pattern: "垂直拉", equipment: "器械" },
+    { name: "坐姿划船", category: "背", pattern: "水平拉", equipment: "器械" },
+    { name: "杠铃划船", category: "背", pattern: "水平拉", equipment: "杠铃" },
+    { name: "哑铃划船", category: "背", pattern: "水平拉", equipment: "哑铃" },
+    { name: "绳索面拉", category: "背", pattern: "水平拉", equipment: "绳索" }
   ],
   臀: [
-    { name: "杠铃臀推",       type: "主力" },
-    { name: "罗马尼亚硬拉",   type: "主力" },
-    { name: "保加利亚分腿蹲", type: "单侧" },
-    { name: "山羊挺身",       type: "辅助" },
-    { name: "坐姿髋外展",     type: "孤立" }
+    { name: "杠铃深蹲",     category: "臀腿", pattern: "深蹲",   equipment: "杠铃" },
+    { name: "腿举",         category: "臀腿", pattern: "深蹲",   equipment: "器械" },
+    { name: "坐姿腿屈伸",   category: "臀腿", pattern: "孤立",   equipment: "器械" },
+    { name: "杠铃臀推",     category: "臀腿", pattern: "臀推",   equipment: "杠铃" },
+    { name: "罗马尼亚硬拉", category: "臀腿", pattern: "髋铰链", equipment: "杠铃" },
+    { name: "单腿硬拉",     category: "臀腿", pattern: "髋铰链", equipment: "哑铃" },
+    { name: "臀桥",         category: "臀腿", pattern: "臀推",   equipment: "自重" },
+    { name: "山羊挺身",     category: "臀腿", pattern: "髋铰链", equipment: "自重" },
+    { name: "保加利亚分腿蹲", category: "臀腿", pattern: "单侧",  equipment: "哑铃" },
+    { name: "分腿蹲",       category: "臀腿", pattern: "单侧",   equipment: "哑铃" },
+    { name: "行走弓步",     category: "臀腿", pattern: "单侧",   equipment: "哑铃" },
+    { name: "腿后举",       category: "臀腿", pattern: "孤立",   equipment: "器械" },
+    { name: "坐姿腿弯举",   category: "臀腿", pattern: "孤立",   equipment: "器械" }
   ]
 };
 
@@ -429,15 +442,15 @@ function updateLoadLastBtn() {
 var mockPlans = {
   胸: {
     增肌: [
-      { name: "上斜哑铃卧推",   weight: "60", sets: "4", reps: "10", note: "控制离心，顶峰停顿" },
-      { name: "上斜器械推胸",   weight: "55", sets: "3", reps: "12", note: "全程保持背部收紧" },
+      { name: "平板卧推",       weight: "70", sets: "4", reps: "8",  note: "控制离心，顶峰停顿" },
+      { name: "上斜哑铃卧推",   weight: "26", sets: "4", reps: "10", note: "全程保持背部收紧" },
       { name: "蝴蝶机夹胸",     weight: "35", sets: "3", reps: "15", note: "顶峰收缩 1 秒" },
-      { name: "双杠臂屈伸",     weight: "—",  sets: "3", reps: "12", note: "上身前倾，感受胸部发力" }
+      { name: "绳索夹胸",       weight: "15", sets: "3", reps: "12", note: "上身前倾，感受胸部发力" }
     ],
     保持: [
-      { name: "上斜哑铃卧推",   weight: "55", sets: "3", reps: "10", note: "" },
-      { name: "蝴蝶机夹胸",     weight: "30", sets: "3", reps: "12", note: "" },
-      { name: "双杠臂屈伸",     weight: "—",  sets: "3", reps: "10", note: "" }
+      { name: "平板卧推",       weight: "60", sets: "3", reps: "10", note: "" },
+      { name: "上斜哑铃卧推",   weight: "22", sets: "3", reps: "10", note: "" },
+      { name: "蝴蝶机夹胸",     weight: "30", sets: "3", reps: "12", note: "" }
     ],
     恢复: [
       { name: "上斜器械推胸",   weight: "40", sets: "3", reps: "15", note: "轻重量，感受肌肉" },
@@ -446,54 +459,53 @@ var mockPlans = {
   },
   肩: {
     增肌: [
-      { name: "器械推肩",       weight: "50", sets: "4", reps: "10", note: "不要耸肩" },
-      { name: "哑铃侧平举",     weight: "12", sets: "4", reps: "15", note: "小臂略低于大臂" },
+      { name: "哑铃推肩",       weight: "20", sets: "4", reps: "10", note: "不要耸肩" },
+      { name: "侧平举",         weight: "10", sets: "4", reps: "15", note: "小臂略低于大臂" },
       { name: "绳索侧平举",     weight: "8",  sets: "3", reps: "15", note: "单侧交替" },
       { name: "反向飞鸟",       weight: "10", sets: "3", reps: "15", note: "感受后束收缩" }
     ],
     保持: [
-      { name: "哑铃侧平举",     weight: "10", sets: "3", reps: "12", note: "" },
-      { name: "器械推肩",       weight: "45", sets: "3", reps: "10", note: "" },
+      { name: "侧平举",         weight: "10", sets: "3", reps: "12", note: "" },
+      { name: "哑铃推肩",       weight: "18", sets: "3", reps: "10", note: "" },
       { name: "反向飞鸟",       weight: "8",  sets: "3", reps: "12", note: "" }
     ],
     恢复: [
-      { name: "哑铃侧平举",     weight: "8",  sets: "3", reps: "15", note: "轻重量，高次数" },
+      { name: "侧平举",         weight: "8",  sets: "3", reps: "15", note: "轻重量，高次数" },
       { name: "绳索侧平举",     weight: "5",  sets: "3", reps: "15", note: "" }
     ]
   },
   背: {
     增肌: [
-      { name: "宽握高位下拉",   weight: "65", sets: "4", reps: "10", note: "下拉至锁骨，挺胸" },
-      { name: "对握高位下拉",   weight: "60", sets: "3", reps: "12", note: "" },
+      { name: "引体向上",       weight: "0",  sets: "4", reps: "8",  note: "全程控制，顶峰收缩" },
+      { name: "高位下拉",       weight: "65", sets: "4", reps: "10", note: "下拉至锁骨，挺胸" },
       { name: "坐姿划船",       weight: "60", sets: "4", reps: "10", note: "顶峰收缩，背部发力" },
       { name: "绳索面拉",       weight: "20", sets: "3", reps: "15", note: "手肘与肩同高" }
     ],
     保持: [
-      { name: "宽握高位下拉",   weight: "60", sets: "3", reps: "10", note: "" },
+      { name: "高位下拉",       weight: "60", sets: "3", reps: "10", note: "" },
       { name: "坐姿划船",       weight: "55", sets: "3", reps: "10", note: "" },
       { name: "绳索面拉",       weight: "18", sets: "3", reps: "12", note: "" }
     ],
     恢复: [
-      { name: "对握高位下拉",   weight: "45", sets: "3", reps: "15", note: "轻重量，感受背部" },
+      { name: "高位下拉",       weight: "45", sets: "3", reps: "15", note: "轻重量，感受背部" },
       { name: "绳索面拉",       weight: "15", sets: "3", reps: "15", note: "" }
     ]
   },
   臀: {
     增肌: [
+      { name: "杠铃深蹲",       weight: "70", sets: "4", reps: "8",  note: "髋膝同向，背部挺直" },
       { name: "杠铃臀推",       weight: "80", sets: "4", reps: "10", note: "顶峰收缩，挤压臀部" },
       { name: "罗马尼亚硬拉",   weight: "60", sets: "4", reps: "10", note: "髋关节主导，背部挺直" },
-      { name: "保加利亚分腿蹲", weight: "20", sets: "3", reps: "10", note: "单侧，控制下降速度" },
-      { name: "绳索后踢",       weight: "15", sets: "3", reps: "15", note: "单腿交替，感受臀部收缩" },
-      { name: "坐姿髋外展",     weight: "50", sets: "3", reps: "15", note: "全程保持核心收紧" }
+      { name: "保加利亚分腿蹲", weight: "20", sets: "3", reps: "10", note: "单侧，控制下降速度" }
     ],
     保持: [
       { name: "杠铃臀推",       weight: "70", sets: "3", reps: "10", note: "" },
       { name: "罗马尼亚硬拉",   weight: "50", sets: "3", reps: "10", note: "" },
-      { name: "坐姿髋外展",     weight: "45", sets: "3", reps: "15", note: "" }
+      { name: "坐姿腿弯举",     weight: "40", sets: "3", reps: "12", note: "" }
     ],
     恢复: [
-      { name: "绳索后踢",       weight: "10", sets: "3", reps: "15", note: "轻重量，感受发力" },
-      { name: "坐姿髋外展",     weight: "35", sets: "3", reps: "15", note: "慢速，充分拉伸" }
+      { name: "臀桥",           weight: "0",  sets: "3", reps: "15", note: "轻重量，感受发力" },
+      { name: "坐姿腿弯举",     weight: "30", sets: "3", reps: "15", note: "慢速，充分拉伸" }
     ]
   }
 };
