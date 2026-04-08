@@ -1002,21 +1002,21 @@ ul {
 .btn-primary-workout:hover  { background: #047857; }
 .btn-primary-workout:active { transform: scale(0.98); }
 
-/* 补录训练：次级按钮 */
+/* 补录训练：次级文字链接 */
 .btn-secondary-add {
-  padding: 9px 18px;
+  padding: 6px 0;
   font-size: 13px;
-  font-weight: 600;
-  background: var(--blue);
-  color: #fff;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-tertiary);
   border: none;
-  border-radius: var(--radius-sm);
   cursor: pointer;
   width: 100%;
-  transition: background 0.15s;
+  text-align: center;
+  transition: color 0.15s;
 }
 
-.btn-secondary-add:hover { background: var(--blue-hover); }
+.btn-secondary-add:hover { color: var(--text-secondary); }
 
 /* 补录链接 */
 .supplement-link {
@@ -1148,25 +1148,36 @@ ul {
   flex-shrink: 0;
 }
 
-.wm-header-title {
-  font-size: 15px;
+.wm-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wm-header-muscle {
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.wm-exit-btn {
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1.5px solid var(--border);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s;
+.wm-header-ex {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
 }
 
-.wm-exit-btn:hover { background: var(--bg); }
+.wm-exit-btn {
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-tertiary);
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.wm-exit-btn:hover { color: var(--text-secondary); }
 
 .wm-body {
   flex: 1;
@@ -1226,6 +1237,67 @@ ul {
 
 .wm-done-btn:hover  { background: var(--blue-hover); }
 .wm-done-btn:active { transform: scale(0.98); }
+
+/* 已完成组列表 */
+.wm-sets-done {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wm-set-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  background: var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.wm-set-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.wm-set-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 休息时长次级行 */
+.wm-rest-config {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 20px;
+}
+
+.wm-rest-input {
+  width: 52px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-secondary);
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.wm-rest-input::-webkit-inner-spin-button,
+.wm-rest-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.wm-rest-input:focus { border-color: var(--blue); }
 
 /* 本组数据输入区 */
 .wm-set-inputs {
@@ -1567,9 +1639,7 @@ ul {
   }
 
   .btn-secondary-add {
-    height: 46px;
-    font-size: 15px;
-    padding: 0;
+    font-size: 14px;
   }
 
   /* ── 右栏：历史记录退至次级 ──────────────────────── */

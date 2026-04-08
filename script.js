@@ -635,13 +635,14 @@ document.getElementById("ai-import-btn").onclick = function () {
 // ══════════════════════════════════════════════════════
 
 var wm = {
-  exercises:   [],   // [{name, weight, sets, reps}, ...]
-  exIdx:       0,    // 当前动作下标
-  setDone:     0,    // 当前动作已完成组数
-  restTimer:   null, // setInterval 句柄
-  restEndTime: 0,    // 休息结束的时间戳（ms），基于 Date.now()
-  restTotal:   90,   // 本次休息时长（秒，可由输入框修改）
-  sessionLog:  []    // 本次训练记录
+  exercises:    [],   // [{name, weight, sets, reps}, ...]
+  exIdx:        0,    // 当前动作下标
+  setDone:      0,    // 当前动作已完成组数
+  restTimer:    null, // setInterval 句柄
+  restEndTime:  0,    // 休息结束时间戳（ms）
+  restTotal:    90,   // 本次休息时长（秒）
+  sessionLog:   [],   // 本次训练记录
+  _exDoneTimer: null  // ex-done 自动跳转定时器
   /*
     sessionLog[i] = {
       name, targetWeight, targetSets, targetReps,
@@ -669,11 +670,13 @@ document.getElementById("start-workout-btn").onclick = function () {
     return;
   }
 
-  wm.exercises  = list;
-  wm.exIdx      = 0;
-  wm.setDone    = 0;
-  wm.restTotal  = 90;
-  wm.sessionLog = list.map(function (ex) {
+  wm.exercises     = list;
+  wm.exIdx         = 0;
+  wm.setDone       = 0;
+  wm.restTotal     = 90;
+  wm.restEndTime   = 0;
+  wm._exDoneTimer  = null;
+  wm.sessionLog    = list.map(function (ex) {
     return {
       name:          ex.name,
       targetWeight:  ex.weight,
@@ -746,6 +749,7 @@ document.getElementById("draft-discard-btn").onclick = function () {
 // ── 退出训练 ─────────────────────────────────────────
 document.getElementById("wm-exit-btn").onclick = function () {
   clearInterval(wm.restTimer);
+  clearTimeout(wm._exDoneTimer);
   wm.restEndTime = 0;
   var hasSets = wm.sessionLog.some(function (log) {
     return log.completedSets.length > 0;
@@ -794,8 +798,9 @@ document.getElementById("wm-skip-btn").onclick = function () {
   wmShow("working");
 };
 
-// ── 进入下一动作 ─────────────────────────────────────
+// ── 立即进入下一动作（取消自动跳转计时器）────────────
 document.getElementById("wm-next-ex-btn").onclick = function () {
+  clearTimeout(wm._exDoneTimer);
   wm.exIdx++;
   wm.setDone = 0;
   wmShow("working");
@@ -804,6 +809,7 @@ document.getElementById("wm-next-ex-btn").onclick = function () {
 // ── 训练完成：自动记录 + 返回 ────────────────────────
 document.getElementById("wm-finish-btn").onclick = function () {
   clearInterval(wm.restTimer);
+  clearTimeout(wm._exDoneTimer);
   wm.restEndTime = 0;
   wmAutoSave();
   clearDraft();
@@ -914,22 +920,46 @@ document.getElementById("import-file").onchange = function (e) {
   reader.readAsText(file);
 };
 
+// ── 渲染已完成组列表 ─────────────────────────────────
+function wmRenderSetsDone() {
+  var el   = document.getElementById("wm-sets-done");
+  var sets = wm.sessionLog[wm.exIdx].completedSets;
+  if (sets.length === 0) { el.innerHTML = ""; return; }
+  el.innerHTML = sets.map(function (s) {
+    return '<div class="wm-set-row">' +
+      '<span class="wm-set-num">第 ' + s.setNumber + ' 组</span>' +
+      '<span class="wm-set-val">' + s.weight + ' kg &times; ' + s.reps + '</span>' +
+      '</div>';
+  }).join("");
+}
+
+// ── 更新 header 部位 / 动作进度 ──────────────────────
+function wmUpdateHeader() {
+  var muscle = document.getElementById("muscle").value;
+  document.getElementById("wm-header-muscle").textContent = muscle;
+  document.getElementById("wm-header-ex").textContent =
+    "动作 " + (wm.exIdx + 1) + " / " + wm.exercises.length;
+}
+
 // ── 核心渲染：根据状态更新面板 ───────────────────────
 function wmShow(state) {
   var ex = wm.exercises[wm.exIdx];
 
   // 隐藏所有子区块
-  document.getElementById("wm-main").style.display    = "none";
-  document.getElementById("wm-ex-done").style.display = "none";
+  document.getElementById("wm-main").style.display     = "none";
+  document.getElementById("wm-ex-done").style.display  = "none";
   document.getElementById("wm-all-done").style.display = "none";
 
+  wmUpdateHeader();
+
   if (state === "working") {
-    document.getElementById("wm-main").style.display = "flex";
-    document.getElementById("wm-main").style.flexDirection = "column";
-    document.getElementById("wm-main").style.alignItems = "center";
-    document.getElementById("wm-rest-area").style.display = "none";
-    document.getElementById("wm-set-inputs").style.display = "flex";
-    document.getElementById("wm-done-btn").style.display = "block";
+    var main = document.getElementById("wm-main");
+    main.style.cssText = "display:flex; flex-direction:column; align-items:center; width:100%";
+
+    document.getElementById("wm-rest-area").style.display   = "none";
+    document.getElementById("wm-set-inputs").style.display  = "flex";
+    document.getElementById("wm-rest-config").style.display = "flex";
+    document.getElementById("wm-done-btn").style.display    = "block";
 
     document.getElementById("wm-ex-name").textContent  = ex.name;
     document.getElementById("wm-target").textContent   =
@@ -937,20 +967,24 @@ function wmShow(state) {
     document.getElementById("wm-progress").textContent =
       "第 " + (wm.setDone + 1) + " / " + ex.sets + " 组";
 
-    // 预填输入框：首组用目标值，后续组用上一组实际值
-    var log = wm.sessionLog[wm.exIdx].completedSets;
+    // 预填：首组用目标值，后续组沿用上组实际数据
+    var log  = wm.sessionLog[wm.exIdx].completedSets;
     var prev = log.length > 0 ? log[log.length - 1] : null;
     document.getElementById("wm-input-weight").value = prev ? prev.weight : ex.weight;
     document.getElementById("wm-input-reps").value   = prev ? prev.reps   : ex.reps;
     document.getElementById("wm-input-rest").value   = wm.restTotal;
 
+    wmRenderSetsDone();
+
   } else if (state === "resting") {
-    document.getElementById("wm-main").style.display = "flex";
-    document.getElementById("wm-main").style.flexDirection = "column";
-    document.getElementById("wm-main").style.alignItems = "center";
-    document.getElementById("wm-rest-area").style.display = "flex";
-    document.getElementById("wm-set-inputs").style.display = "none";
-    document.getElementById("wm-done-btn").style.display = "none";
+    var main = document.getElementById("wm-main");
+    main.style.cssText = "display:flex; flex-direction:column; align-items:center; width:100%";
+
+    document.getElementById("wm-rest-area").style.display   = "flex";
+    document.getElementById("wm-set-inputs").style.display  = "none";
+    document.getElementById("wm-rest-config").style.display = "none";
+    document.getElementById("wm-done-btn").style.display    = "none";
+    document.getElementById("wm-rest-label").textContent    = "休息中";
 
     document.getElementById("wm-ex-name").textContent  = ex.name;
     document.getElementById("wm-target").textContent   =
@@ -958,31 +992,34 @@ function wmShow(state) {
     document.getElementById("wm-progress").textContent =
       "已完成 " + wm.setDone + " / " + ex.sets + " 组";
 
+    wmRenderSetsDone();
     wmStartRest();
 
   } else if (state === "ex-done") {
-    document.getElementById("wm-ex-done").style.display = "flex";
-    document.getElementById("wm-ex-done").style.flexDirection = "column";
-    document.getElementById("wm-ex-done").style.alignItems = "center";
+    var doneEl = document.getElementById("wm-ex-done");
+    doneEl.style.cssText = "display:flex; flex-direction:column; align-items:center; width:100%";
 
     document.getElementById("wm-done-msg").textContent = ex.name + " 完成！";
 
     if (wm.exIdx + 1 < wm.exercises.length) {
       var next = wm.exercises[wm.exIdx + 1];
-      document.getElementById("wm-next-hint").textContent = "下一个：" + next.name;
+      document.getElementById("wm-next-hint").textContent   = "下一个：" + next.name;
       document.getElementById("wm-next-ex-btn").style.display = "block";
-      document.getElementById("wm-finish-btn").style.display  = "none";
+      // 1.5s 后自动进入下一动作
+      wm._exDoneTimer = setTimeout(function () {
+        wm.exIdx++;
+        wm.setDone = 0;
+        wmShow("working");
+      }, 1500);
     } else {
-      document.getElementById("wm-next-hint").textContent = "所有动作已完成";
+      document.getElementById("wm-next-hint").textContent     = "所有动作已完成";
       document.getElementById("wm-next-ex-btn").style.display = "none";
-      // 短暂延迟后自动跳到 all-done
       setTimeout(function () { wmShow("all-done"); }, 1200);
     }
 
   } else if (state === "all-done") {
-    document.getElementById("wm-all-done").style.display = "flex";
-    document.getElementById("wm-all-done").style.flexDirection = "column";
-    document.getElementById("wm-all-done").style.alignItems = "center";
+    var allEl = document.getElementById("wm-all-done");
+    allEl.style.cssText = "display:flex; flex-direction:column; align-items:center; width:100%";
   }
 }
 
@@ -1002,8 +1039,7 @@ function wmTickRest() {
   if (remaining <= 0) {
     clearInterval(wm.restTimer);
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-    document.getElementById("wm-rest-label").textContent = "开始下一组！";
-    document.getElementById("wm-done-btn").style.display = "block";
+    wmShow("working");  // 自动进入下一组
   }
 }
 

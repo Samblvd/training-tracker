@@ -219,8 +219,11 @@
     <div class="wm-panel">
 
       <div class="wm-header">
-        <span class="wm-header-title">训练中</span>
-        <button id="wm-exit-btn" class="wm-exit-btn">退出训练</button>
+        <div class="wm-header-info">
+          <span class="wm-header-muscle" id="wm-header-muscle"></span>
+          <span class="wm-header-ex" id="wm-header-ex"></span>
+        </div>
+        <button id="wm-exit-btn" class="wm-exit-btn">退出</button>
       </div>
 
       <div class="wm-body">
@@ -231,7 +234,10 @@
           <div class="wm-target" id="wm-target"></div>
           <div class="wm-progress" id="wm-progress"></div>
 
-          <!-- 本组实际数据输入（working 状态下显示） -->
+          <!-- 已完成组记录 -->
+          <div id="wm-sets-done" class="wm-sets-done"></div>
+
+          <!-- 本组输入：重量 + 次数（主字段） -->
           <div id="wm-set-inputs" class="wm-set-inputs">
             <div class="wm-set-field">
               <label class="wm-set-label">重量 kg</label>
@@ -241,27 +247,28 @@
               <label class="wm-set-label">次数</label>
               <input type="number" id="wm-input-reps" class="wm-input" min="0">
             </div>
-            <div class="wm-set-field">
-              <label class="wm-set-label">休息 秒</label>
-              <input type="number" id="wm-input-rest" class="wm-input" min="0">
-            </div>
+          </div>
+          <!-- 休息时长：次级字段 -->
+          <div id="wm-rest-config" class="wm-rest-config">
+            休息时长 <input type="number" id="wm-input-rest" class="wm-rest-input" min="0"> 秒
           </div>
 
           <button id="wm-done-btn" class="wm-done-btn">完成本组</button>
 
+          <!-- 休息倒计时（在 wm-main 内展开，不切换大区块） -->
           <div id="wm-rest-area" class="wm-rest-area" style="display:none;">
             <div class="wm-rest-label" id="wm-rest-label">休息中</div>
             <div class="wm-timer" id="wm-timer">01:30</div>
-            <button id="wm-skip-btn" class="wm-skip-btn">跳过休息</button>
+            <button id="wm-skip-btn" class="wm-skip-btn">跳过</button>
           </div>
         </div>
 
-        <!-- ex-done 状态 -->
+        <!-- ex-done 状态（1.5s 后自动跳转） -->
         <div id="wm-ex-done" style="display:none;">
           <div class="wm-done-icon">✓</div>
           <div class="wm-done-msg" id="wm-done-msg"></div>
           <div class="wm-next-hint" id="wm-next-hint"></div>
-          <button id="wm-next-ex-btn" class="wm-done-btn">进入下一动作</button>
+          <button id="wm-next-ex-btn" class="wm-done-btn">立即进入</button>
         </div>
 
         <!-- all-done 状态 -->
