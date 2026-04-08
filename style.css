@@ -176,14 +176,20 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(79,107,237,0.1);
 }
 
-/* 备注 + 添加按钮行 */
+/* 备注 + 按钮行 */
 .form-bottom {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-items: flex-end;
 }
 
-.form-bottom input { flex: 1; }
+.form-bottom input { width: 100%; }
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
 
 button#btn {
   padding: 8px 18px;
@@ -1163,23 +1169,25 @@ ul {
 
 /* ═══════════════════════════════════════════════════════
    移动端响应式（≤ 768px）
+   目标机型：iPhone 14 / 15 / 16 Pro / Pro Max
 ═══════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
 
-  /* 整体：取消固定高度，允许页面滚动 */
+  /* ── 全局 ─────────────────────────────────────────── */
   body {
     height: auto;
     overflow: auto;
+    /* iPhone safe area（刘海 / 灵动岛 / home indicator） */
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* 主布局：改为纵向单栏 */
   .app {
     flex-direction: column;
     height: auto;
     min-height: 100vh;
   }
 
-  /* 左栏：全宽，去掉右边框，改为下边框 */
+  /* ── 左栏 ─────────────────────────────────────────── */
   .left-panel {
     width: 100%;
     border-right: none;
@@ -1187,18 +1195,23 @@ ul {
     overflow-y: visible;
   }
 
-  /* 右栏：全宽，正常文档流 */
-  .right-panel {
-    padding: 16px;
+  /* ── 标题区：更紧凑，日期退至次级 ────────────────── */
+  .left-header {
+    padding: 14px 16px 12px;
   }
 
-  /* 记录列表：不再限制高度，正常显示 */
-  ul {
-    overflow-y: visible;
-    flex: none;
+  h1 {
+    font-size: 17px;
+    font-weight: 700;
   }
 
-  /* 统计区：收紧间距 */
+  .today-date {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    opacity: 0.7;
+  }
+
+  /* ── 统计区：紧凑 ─────────────────────────────────── */
   .stats {
     padding: 10px 16px;
   }
@@ -1211,51 +1224,100 @@ ul {
     padding: 8px 4px;
   }
 
-  /* 表单区：收紧间距 */
+  .stat-item .count {
+    font-size: 20px;
+  }
+
+  .stat-item .label {
+    font-size: 10px;
+  }
+
+  /* ── 表单区 ───────────────────────────────────────── */
   .form {
-    padding: 14px 16px;
+    padding: 14px 16px 16px;
     gap: 10px;
   }
 
-  /* 表单行：两列并排，防溢出 */
+  /* 两列并排，防溢出 */
   .form-row {
     gap: 8px;
   }
 
-  /* form-field 均分宽度，防内容撑破 */
   .form-field {
     flex: 1;
     min-width: 0;
   }
 
-  /* AI 助手按钮：撑满 form-field */
-  .ai-entry-btn {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    font-size: 13px;
-    border-radius: var(--radius-sm);
-    box-sizing: border-box;
-    padding: 10px 6px;
-    height: auto;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* 字体和输入框：16px 防止 iOS 自动缩放 */
+  /* 统一所有输入控件：16px 防 iOS 缩放，高度 44px */
   input[type="text"],
   input[type="date"],
   select {
     font-size: 16px;
     padding: 10px 8px;
-    height: auto;
     min-height: 44px;
-    box-sizing: border-box;
+    height: auto;
     width: 100%;
+    box-sizing: border-box;
   }
 
-  /* 动作区：未勾选时折叠，勾选后展开为 grid 三列 */
+  /* AI 助手按钮：与 select 同高，宽度撑满 form-field */
+  .ai-entry-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 带入上次训练按钮 */
+  .load-last-btn {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  /* ── 动作表头：手机隐藏 ─────────────────────────── */
+  .exercise-table-header {
+    display: none;
+  }
+
+  /* 动作列表圆角 */
+  .exercise-list {
+    border-radius: var(--radius-md);
+  }
+
+  /* 动作行：未勾选 */
+  .exercise-row {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 12px;
+    transition: background 0.12s, border-left-color 0.12s;
+    border-left: 3px solid transparent;
+  }
+
+  /* 动作行：已勾选 — 左边条 + 淡蓝背景 */
+  .exercise-row.is-checked {
+    border-left-color: var(--blue);
+    background: #F5F7FF;
+  }
+
+  /* checkbox + 动作名，占满整行 */
+  .ex-label {
+    width: 100%;
+    flex: none;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 0;
+  }
+
+  /* 勾选后展开：grid 三列等宽 */
   .exercise-details {
     display: none;
   }
@@ -1265,15 +1327,14 @@ ul {
     grid-template-columns: 1fr 1fr 1fr;
     gap: 6px;
     width: 100%;
-    margin-top: 4px;
+    margin-top: 2px;
   }
 
-  /* 每列：label 在上，input 在下 */
   .ex-input-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
   }
 
   .ex-input-label {
@@ -1289,52 +1350,71 @@ ul {
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    font-size: 15px;
+    font-size: 16px;
     padding: 8px 4px;
     text-align: center;
   }
 
-  button#btn {
-    font-size: 16px;
-    padding: 11px 20px;
-    box-sizing: border-box;
-  }
-
-  /* 动作表头：手机端隐藏（改为两行布局） */
-  .exercise-table-header {
-    display: none;
-  }
-
-  /* 动作列表：去掉圆角上方的连接（表头已隐藏） */
-  .exercise-list {
-    border-radius: var(--radius-md);
-  }
-
-  /* 动作行：收紧内边距 */
-  .exercise-row {
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 8px 12px;
-  }
-
-  /* 第一行：checkbox + 动作名，占满整行 */
-  .ex-label {
-    width: 100%;
-    flex: none;
-    font-size: 15px;
-    padding: 2px 0;
-  }
-
-
-  /* 表单底部：备注和按钮堆叠 */
+  /* ── 按钮区：主次层级 ────────────────────────────── */
   .form-bottom {
+    gap: 10px;
+  }
+
+  .form-actions {
     flex-direction: column;
     gap: 8px;
   }
 
-  .form-bottom #btn {
+  /* 开始训练：主 CTA，全宽，52px，绿色实心 */
+  #start-workout-btn {
     width: 100%;
-    padding: 12px;
+    height: 52px;
+    font-size: 16px;
+    font-weight: 700;
+    background: #059669;
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.3px;
+    box-sizing: border-box;
+  }
+
+  #start-workout-btn:hover  { background: #047857; }
+  #start-workout-btn:active { transform: scale(0.99); }
+
+  /* 添加记录：次级，全宽，ghost 样式 */
+  button#btn {
+    width: 100%;
+    height: 44px;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  button#btn:hover  { background: var(--bg); color: var(--text-primary); }
+  button#btn:active { transform: scale(0.99); }
+
+  /* ── 右栏：历史记录退至次级 ──────────────────────── */
+  .right-panel {
+    padding: 14px 16px 20px;
+    gap: 10px;
+    background: var(--bg);
+  }
+
+  .panel-header {
+    font-size: 10px;
+    opacity: 0.6;
+  }
+
+  ul {
+    overflow-y: visible;
+    flex: none;
+    gap: 8px;
   }
 
   /* 卡片按钮：更大点击区域 */
@@ -1345,49 +1425,29 @@ ul {
     font-size: 12px;
   }
 
-  /* 卡片：内边距宽松一点 */
   .card-header {
-    padding: 12px 14px;
+    padding: 10px 14px;
     flex-wrap: wrap;
     gap: 8px;
   }
 
   .card-body {
-    padding: 12px 14px;
+    padding: 10px 14px;
   }
 
-  .card-ex-row {
-    padding: 4px 0;
-  }
+  .card-ex-row { padding: 3px 0; }
+  .card-ex-name { font-size: 13px; }
+  .card-ex-detail { font-size: 12px; width: auto; }
 
-  .card-ex-name {
-    font-size: 14px;
-  }
-
-  .card-ex-detail {
-    font-size: 13px;
-    width: auto;
-  }
-
-  /* Modal：手机上全屏化 */
+  /* ── Modal ───────────────────────────────────────── */
   .modal-panel {
     width: 96vw;
     max-height: 92vh;
     border-radius: var(--radius-md);
   }
 
-  /* AI 选项按钮：宽松一点 */
   .opt-btn {
     padding: 8px 16px;
     font-size: 14px;
-  }
-
-  /* 左栏标题区 */
-  .left-header {
-    padding: 16px;
-  }
-
-  h1 {
-    font-size: 18px;
   }
 }
