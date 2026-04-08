@@ -211,24 +211,27 @@ button#btn:active { transform: scale(0.98); }
 #gym-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;   /* 统一间距，所有子元素都由这个 gap 控制 */
 }
 
 /* AI 生成按钮 */
 .ai-entry-btn {
-  display: inline-flex;
+  display: flex;           /* 改为 flex（非 inline-flex），配合 width:100% 更稳定 */
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 6px 14px;
-  font-size: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 13px;
   font-weight: 600;
   background: var(--purple-light);
   color: var(--purple);
   border: 1.5px solid #C4B5FD;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.15s;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .ai-entry-btn:hover { background: #EDE9FE; }
@@ -1004,11 +1007,6 @@ ul {
   font-weight: 600;
 }
 
-/* AI 入口按钮：全宽 */
-.ai-entry-btn {
-  width: 100%;
-  justify-content: center;
-}
 
 /* 补录 Modal 保存按钮复用 ai-generate-btn 样式 */
 .ai-generate-btn-style {

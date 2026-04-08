@@ -66,7 +66,7 @@ function setType(value) {
     b.classList.toggle("active", b.dataset.value === value);
   });
   var isGym = value === "健身";
-  document.getElementById("gym-section").style.display    = isGym ? "block" : "none";
+  document.getElementById("gym-section").style.display    = isGym ? "flex" : "none";
   document.getElementById("non-gym-note").style.display   = isGym ? "none"  : "block";
   document.getElementById("start-workout-btn").style.display = isGym ? "block" : "none";
   document.getElementById("btn").style.display            = isGym ? "none"  : "block";
@@ -420,7 +420,7 @@ function getLastRecord(muscle) {
 function updateLoadLastBtn() {
   var muscle = document.getElementById("muscle").value;
   document.getElementById("load-last-btn").style.display =
-    getLastRecord(muscle) ? "block" : "none";
+    getLastRecord(muscle) ? "flex" : "none";
 }
 
 // ── AI Modal ──────────────────────────────────────────
