@@ -607,12 +607,19 @@ document.getElementById("ai-import-btn").onclick = function () {
 // ══════════════════════════════════════════════════════
 
 var wm = {
-  exercises:  [],   // [{name, weight, sets, reps}, ...]
-  exIdx:      0,    // 当前动作下标
-  setDone:    0,    // 当前动作已完成组数
-  restTimer:  null, // setInterval 句柄
-  restSecs:   0,    // 当前剩余秒数
-  REST_TOTAL: 90    // 组间休息秒数
+  exercises:   [],   // [{name, weight, sets, reps}, ...]
+  exIdx:       0,    // 当前动作下标
+  setDone:     0,    // 当前动作已完成组数
+  restTimer:   null, // setInterval 句柄
+  restSecs:    0,    // 当前剩余秒数
+  restTotal:   90,   // 本次休息时长（秒，可由输入框修改）
+  sessionLog:  []    // 本次训练记录
+  /*
+    sessionLog[i] = {
+      name, targetWeight, targetSets, targetReps,
+      completedSets: [{ setNumber, weight, reps, restSeconds }, ...]
+    }
+  */
 };
 
 // ── 入口：读取已勾选动作，进入训练模式 ──────────────
@@ -634,9 +641,19 @@ document.getElementById("start-workout-btn").onclick = function () {
     return;
   }
 
-  wm.exercises = list;
-  wm.exIdx     = 0;
-  wm.setDone   = 0;
+  wm.exercises  = list;
+  wm.exIdx      = 0;
+  wm.setDone    = 0;
+  wm.restTotal  = 90;
+  wm.sessionLog = list.map(function (ex) {
+    return {
+      name:          ex.name,
+      targetWeight:  ex.weight,
+      targetSets:    ex.sets,
+      targetReps:    ex.reps,
+      completedSets: []
+    };
+  });
   clearInterval(wm.restTimer);
 
   document.getElementById("workout-overlay").style.display = "flex";
@@ -651,15 +668,30 @@ document.getElementById("wm-exit-btn").onclick = function () {
 
 // ── 完成本组 ─────────────────────────────────────────
 document.getElementById("wm-done-btn").onclick = function () {
-  wm.setDone++;
   var ex = wm.exercises[wm.exIdx];
 
+  // 读取本组实际数据
+  var actualWeight = document.getElementById("wm-input-weight").value || ex.weight;
+  var actualReps   = document.getElementById("wm-input-reps").value   || ex.reps;
+  var restSecs     = parseInt(document.getElementById("wm-input-rest").value) || 90;
+
+  // 更新休息时长
+  wm.restTotal = restSecs;
+
+  // 记录本组数据
+  wm.sessionLog[wm.exIdx].completedSets.push({
+    setNumber:   wm.setDone + 1,
+    weight:      actualWeight,
+    reps:        actualReps,
+    restSeconds: restSecs
+  });
+
+  wm.setDone++;
+
   if (wm.setDone >= ex.sets) {
-    // 当前动作全部组数完成
     clearInterval(wm.restTimer);
     wmShow("ex-done");
   } else {
-    // 开始组间休息
     wmShow("resting");
   }
 };
@@ -697,6 +729,7 @@ function wmShow(state) {
     document.getElementById("wm-main").style.flexDirection = "column";
     document.getElementById("wm-main").style.alignItems = "center";
     document.getElementById("wm-rest-area").style.display = "none";
+    document.getElementById("wm-set-inputs").style.display = "flex";
     document.getElementById("wm-done-btn").style.display = "block";
 
     document.getElementById("wm-ex-name").textContent  = ex.name;
@@ -705,11 +738,19 @@ function wmShow(state) {
     document.getElementById("wm-progress").textContent =
       "第 " + (wm.setDone + 1) + " / " + ex.sets + " 组";
 
+    // 预填输入框：首组用目标值，后续组用上一组实际值
+    var log = wm.sessionLog[wm.exIdx].completedSets;
+    var prev = log.length > 0 ? log[log.length - 1] : null;
+    document.getElementById("wm-input-weight").value = prev ? prev.weight : ex.weight;
+    document.getElementById("wm-input-reps").value   = prev ? prev.reps   : ex.reps;
+    document.getElementById("wm-input-rest").value   = wm.restTotal;
+
   } else if (state === "resting") {
     document.getElementById("wm-main").style.display = "flex";
     document.getElementById("wm-main").style.flexDirection = "column";
     document.getElementById("wm-main").style.alignItems = "center";
     document.getElementById("wm-rest-area").style.display = "flex";
+    document.getElementById("wm-set-inputs").style.display = "none";
     document.getElementById("wm-done-btn").style.display = "none";
 
     document.getElementById("wm-ex-name").textContent  = ex.name;
@@ -749,7 +790,7 @@ function wmShow(state) {
 // ── 组间倒计时 ────────────────────────────────────────
 function wmStartRest() {
   clearInterval(wm.restTimer);
-  wm.restSecs = wm.REST_TOTAL;
+  wm.restSecs = wm.restTotal;
   wmUpdateTimerDisplay();
 
   wm.restTimer = setInterval(function () {

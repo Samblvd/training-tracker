@@ -210,6 +210,22 @@
           <div class="wm-target" id="wm-target"></div>
           <div class="wm-progress" id="wm-progress"></div>
 
+          <!-- 本组实际数据输入（working 状态下显示） -->
+          <div id="wm-set-inputs" class="wm-set-inputs">
+            <div class="wm-set-field">
+              <label class="wm-set-label">重量 kg</label>
+              <input type="number" id="wm-input-weight" class="wm-input" min="0">
+            </div>
+            <div class="wm-set-field">
+              <label class="wm-set-label">次数</label>
+              <input type="number" id="wm-input-reps" class="wm-input" min="0">
+            </div>
+            <div class="wm-set-field">
+              <label class="wm-set-label">休息 秒</label>
+              <input type="number" id="wm-input-rest" class="wm-input" min="0">
+            </div>
+          </div>
+
           <button id="wm-done-btn" class="wm-done-btn">完成本组</button>
 
           <div id="wm-rest-area" class="wm-rest-area" style="display:none;">
