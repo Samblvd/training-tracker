@@ -50,15 +50,10 @@
 
       <div class="form">
 
-        <!-- 隐藏字段：类型、部位 -->
+        <!-- 隐藏状态字段（JS 管理） -->
         <input type="hidden" id="type"   value="健身">
         <input type="hidden" id="muscle" value="胸">
-
-        <!-- 日期选择（默认今天，可改为过去日期补录） -->
-        <div class="prep-section">
-          <span class="prep-label">日期</span>
-          <input type="date" id="date" class="date-input">
-        </div>
+        <input type="hidden" id="date">
 
         <!-- 训练类型 pill 选择器 -->
         <div class="prep-section">
@@ -84,20 +79,25 @@
             </div>
           </div>
 
-          <!-- AI 助手（全宽） -->
-          <button type="button" class="ai-entry-btn" id="ai-open-btn">✦ AI 生成今日计划</button>
-
-          <button type="button" id="load-last-btn" class="load-last-btn" style="display:none;">
-            带入上次该部位训练
-          </button>
-
-          <div class="exercise-table-header">
-            <span class="ex-header-name">动作</span>
-            <span class="ex-header-cell">重量(kg)</span>
-            <span class="ex-header-cell">组数</span>
-            <span class="ex-header-cell">次数</span>
+          <!-- AI + 手动编排（一行两按钮） -->
+          <div class="prep-action-row">
+            <button type="button" class="ai-entry-btn" id="ai-open-btn">✦ AI 生成今日计划</button>
+            <button type="button" class="manual-btn" id="manual-arrange-btn">手动编排</button>
           </div>
-          <div id="exercise-list" class="exercise-list"></div>
+
+          <!-- 动作区（按需展开，默认折叠） -->
+          <div id="exercise-section" style="display:none;">
+            <button type="button" id="load-last-btn" class="load-last-btn" style="display:none;">
+              带入上次该部位训练
+            </button>
+            <div class="exercise-table-header">
+              <span class="ex-header-name">动作</span>
+              <span class="ex-header-cell">重量(kg)</span>
+              <span class="ex-header-cell">组数</span>
+              <span class="ex-header-cell">次数</span>
+            </div>
+            <div id="exercise-list" class="exercise-list"></div>
+          </div>
 
         </div>
 
@@ -108,8 +108,24 @@
 
         <!-- 主按钮区 -->
         <div class="main-actions">
+          <!-- 健身训练模式主入口 -->
           <button id="start-workout-btn" type="button" class="btn-primary-workout">开始训练</button>
-          <button id="btn" class="btn-secondary-add">补录训练</button>
+          <!-- 非健身今日记录 / 补录保存（JS 控制显示） -->
+          <button id="btn" class="btn-primary-workout" style="display:none;">记录今天</button>
+        </div>
+
+        <!-- 补录入口（次级，底部） -->
+        <div class="backfill-entry-row">
+          <button id="backfill-open-btn" class="backfill-link">＋ 补录过去训练记录</button>
+        </div>
+
+        <!-- 补录模式区（展开时显示日期选择） -->
+        <div id="backfill-section" class="backfill-section" style="display:none;">
+          <div class="backfill-header">
+            <span class="prep-label">补录日期</span>
+            <button id="backfill-cancel-btn" class="backfill-cancel">取消</button>
+          </div>
+          <input type="date" id="backfill-date" class="date-input">
         </div>
 
       </div>

@@ -41,7 +41,8 @@ var exercises = {
 
 // ── 状态 ──────────────────────────────────────────────
 var records = JSON.parse(localStorage.getItem("records") || "[]");
-var editingIndex = -1;
+var editingIndex  = -1;
+var backfillMode  = false;
 
 // ── 初始化 ────────────────────────────────────────────
 rebuildList();
@@ -73,11 +74,19 @@ function setType(value) {
     b.classList.toggle("active", b.dataset.value === value);
   });
   var isGym = value === "健身";
-  document.getElementById("gym-section").style.display       = isGym ? "flex"  : "none";
-  document.getElementById("non-gym-note").style.display      = isGym ? "none"  : "block";
-  document.getElementById("start-workout-btn").style.display = isGym ? "block" : "none";
-  // 健身：补录按钮也显示；非健身：只显示补录按钮
-  document.getElementById("btn").style.display               = "block";
+  document.getElementById("gym-section").style.display  = isGym ? "flex"  : "none";
+  document.getElementById("non-gym-note").style.display = isGym ? "none"  : "block";
+
+  if (backfillMode) {
+    // 补录模式：两种类型都只显示保存按钮
+    document.getElementById("start-workout-btn").style.display = "none";
+    document.getElementById("btn").style.display               = "block";
+  } else {
+    // 正常模式：健身显示开始训练，非健身显示记录今天
+    document.getElementById("start-workout-btn").style.display = isGym  ? "block" : "none";
+    document.getElementById("btn").style.display               = isGym  ? "none"  : "block";
+    if (!isGym) document.getElementById("btn").textContent = "记录今天";
+  }
 }
 
 // ── 辅助：设置训练部位（更新隐藏字段 + pill 高亮 + 重新渲染动作）
@@ -101,6 +110,67 @@ document.getElementById("muscle-pills").addEventListener("click", function (e) {
   var btn = e.target.closest(".pill");
   if (btn) setMuscle(btn.dataset.value);
 });
+
+// ── 动作区：展开 / 折叠 ──────────────────────────────
+function showExerciseSection() {
+  var sec = document.getElementById("exercise-section");
+  sec.style.display = "flex";
+  document.getElementById("manual-arrange-btn").textContent = "收起";
+  updateLoadLastBtn();
+}
+
+function hideExerciseSection() {
+  document.getElementById("exercise-section").style.display = "none";
+  document.getElementById("manual-arrange-btn").textContent = "手动编排";
+}
+
+document.getElementById("manual-arrange-btn").onclick = function () {
+  var sec = document.getElementById("exercise-section");
+  if (sec.style.display === "none" || sec.style.display === "") {
+    showExerciseSection();
+  } else {
+    hideExerciseSection();
+  }
+};
+
+// ── 补录模式：进入 / 退出 ─────────────────────────────
+function enterBackfill() {
+  backfillMode = true;
+  // 默认填昨天
+  var d = new Date(); d.setDate(d.getDate() - 1);
+  document.getElementById("backfill-date").value =
+    d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+
+  document.getElementById("backfill-section").style.display = "flex";
+  document.getElementById("backfill-open-btn").style.display = "none";
+
+  var isGym = document.getElementById("type").value === "健身";
+  document.getElementById("start-workout-btn").style.display = "none";
+  var btn = document.getElementById("btn");
+  btn.style.display = "block";
+  btn.textContent   = "保存补录";
+
+  if (isGym) showExerciseSection();
+}
+
+function exitBackfill() {
+  backfillMode = false;
+  document.getElementById("backfill-section").style.display  = "none";
+  document.getElementById("backfill-open-btn").style.display = "block";
+
+  var isGym = document.getElementById("type").value === "健身";
+  document.getElementById("start-workout-btn").style.display = isGym  ? "block" : "none";
+  var btn = document.getElementById("btn");
+  btn.style.display = isGym ? "none" : "block";
+  if (!isGym) btn.textContent = "记录今天";
+
+  hideExerciseSection();
+}
+
+document.getElementById("backfill-open-btn").onclick  = enterBackfill;
+document.getElementById("backfill-cancel-btn").onclick = exitBackfill;
 
 // ── 带入上次训练 ──────────────────────────────────────
 document.getElementById("load-last-btn").onclick = function () {
@@ -166,11 +236,13 @@ function renderExercises() {
 
 // ── 添加 / 保存修改 ───────────────────────────────────
 document.getElementById("btn").onclick = function () {
-  var date = document.getElementById("date").value;
+  var date = backfillMode
+    ? document.getElementById("backfill-date").value
+    : getTodayStr();
   var type = document.getElementById("type").value;
-  var note = document.getElementById("note").value;
+  var note = document.getElementById("note") ? document.getElementById("note").value : "";
 
-  if (!date) { alert("请填写日期"); return; }
+  if (!date) { showToast("请填写日期"); return; }
 
   var record = { date: date, type: type };
 
@@ -213,7 +285,6 @@ document.getElementById("btn").onclick = function () {
   if (editingIndex >= 0) {
     records[editingIndex] = record;
     editingIndex = -1;
-    document.getElementById("btn").textContent = "补录训练";
   } else {
     records.push(record);
   }
@@ -228,11 +299,16 @@ document.getElementById("btn").onclick = function () {
 
 // ── 把记录填回表单（编辑用）──────────────────────────
 function loadRecordToForm(record) {
-  document.getElementById("date").value = record.date;
+  // 编辑历史记录 = 补录模式，先进入补录态
+  enterBackfill();
+  // 用记录的日期覆盖默认昨天
+  document.getElementById("backfill-date").value = record.date;
+
   setType(record.type);
 
   if (record.type === "健身") {
     setMuscle(record.muscle || "胸");
+    showExerciseSection();
 
     var exMap = {};
     (record.exercises || []).forEach(function (ex) { exMap[ex.name] = ex; });
@@ -278,6 +354,8 @@ function clearForm() {
       else input.value = "";
     });
   });
+  if (backfillMode) exitBackfill();
+  else hideExerciseSection();
 }
 
 // ── 重建整个记录列表 ──────────────────────────────────
@@ -324,7 +402,6 @@ function addToList(record, index) {
     editingIndex = parseInt(li.getAttribute("data-index"));
     loadRecordToForm(records[editingIndex]);
     document.getElementById("btn").textContent = "保存修改";
-    document.getElementById("btn").style.display = "block";
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -627,6 +704,7 @@ document.getElementById("ai-import-btn").onclick = function () {
     }
   });
 
+  showExerciseSection();
   closeAiModal();
 };
 
@@ -653,6 +731,17 @@ var wm = {
 
 // ── 入口：读取已勾选动作，进入训练模式 ──────────────
 document.getElementById("start-workout-btn").onclick = function () {
+  // 如果动作区未展开或无勾选，自动勾选当前部位所有动作
+  var anyChecked = !!document.querySelector("#exercise-list .exercise-row input[type='checkbox']:checked");
+  if (!anyChecked) {
+    showExerciseSection();
+    document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
+      var cb = row.querySelector("input[type='checkbox']");
+      cb.checked = true;
+      row.classList.add("is-checked");
+    });
+  }
+
   var list = [];
   document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
     var cb = row.querySelector("input[type='checkbox']");
@@ -666,7 +755,7 @@ document.getElementById("start-workout-btn").onclick = function () {
   });
 
   if (list.length === 0) {
-    showToast("请先勾选动作");
+    showToast("请先选择训练部位");
     return;
   }
 

@@ -214,6 +214,91 @@ button#btn:active { transform: scale(0.98); }
   gap: 12px;   /* 统一间距，所有子元素都由这个 gap 控制 */
 }
 
+/* AI + 手动编排 按钮行 */
+.prep-action-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.prep-action-row .ai-entry-btn {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 手动编排按钮 */
+.manual-btn {
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--border-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.manual-btn:hover {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
+/* 动作区（按需展开） */
+#exercise-section {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 补录入口行 */
+.backfill-entry-row {
+  text-align: center;
+  padding-top: 4px;
+}
+
+.backfill-link {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.backfill-link:hover { color: var(--text-secondary); }
+
+/* 补录模式区 */
+.backfill-section {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--border-soft);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.backfill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.backfill-cancel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.backfill-cancel:hover { color: var(--text-secondary); }
+
 /* AI 生成按钮 */
 .ai-entry-btn {
   display: flex;           /* 改为 flex（非 inline-flex），配合 width:100% 更稳定 */
@@ -1018,20 +1103,6 @@ ul {
 
 .btn-secondary-add:hover { color: var(--text-secondary); }
 
-/* 补录链接 */
-.supplement-link {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 0;
-  text-align: center;
-  transition: color 0.15s;
-}
-
-.supplement-link:hover { color: var(--text-secondary); }
 
 /* ── Prep section（pill 选择器区块）─────────────────── */
 .prep-section {
