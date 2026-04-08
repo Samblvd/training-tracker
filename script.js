@@ -51,6 +51,7 @@ rebuildList();
 updateStats();
 renderExercises();
 updateLoadLastBtn();
+updateDraftBanner();
 
 // 获取今日日期字符串（YYYY-MM-DD），统一来源
 function getTodayStr() {
@@ -643,7 +644,7 @@ var wm = {
   exIdx:       0,    // 当前动作下标
   setDone:     0,    // 当前动作已完成组数
   restTimer:   null, // setInterval 句柄
-  restSecs:    0,    // 当前剩余秒数
+  restEndTime: 0,    // 休息结束的时间戳（ms），基于 Date.now()
   restTotal:   90,   // 本次休息时长（秒，可由输入框修改）
   sessionLog:  []    // 本次训练记录
   /*
@@ -692,9 +693,72 @@ document.getElementById("start-workout-btn").onclick = function () {
   wmShow("working");
 };
 
+// ── 草稿：保存 / 读取 / 清除 ─────────────────────────
+function saveDraft() {
+  if (wm.sessionLog.length === 0) return;
+  var draft = {
+    date:       getTodayStr(),
+    muscle:     document.getElementById("muscle").value,
+    exercises:  wm.exercises,
+    exIdx:      wm.exIdx,
+    setDone:    wm.setDone,
+    restTotal:  wm.restTotal,
+    sessionLog: wm.sessionLog
+  };
+  localStorage.setItem("draft", JSON.stringify(draft));
+  updateDraftBanner();
+}
+
+function clearDraft() {
+  localStorage.removeItem("draft");
+  updateDraftBanner();
+}
+
+function updateDraftBanner() {
+  var raw = localStorage.getItem("draft");
+  var banner = document.getElementById("draft-banner");
+  if (!raw) { banner.style.display = "none"; return; }
+  var draft = JSON.parse(raw);
+  var doneSets = draft.sessionLog.reduce(function (acc, log) {
+    return acc + log.completedSets.length;
+  }, 0);
+  document.getElementById("draft-banner-text").textContent =
+    "草稿：" + draft.date + " · " + draft.muscle + "（已完成 " + doneSets + " 组）";
+  banner.style.display = "flex";
+}
+
+document.getElementById("draft-resume-btn").onclick = function () {
+  var raw = localStorage.getItem("draft");
+  if (!raw) return;
+  var draft = JSON.parse(raw);
+  wm.exercises  = draft.exercises;
+  wm.exIdx      = draft.exIdx;
+  wm.setDone    = draft.setDone;
+  wm.restTotal  = draft.restTotal;
+  wm.sessionLog = draft.sessionLog;
+  wm.restEndTime = 0;
+  clearInterval(wm.restTimer);
+  clearDraft();
+  setMuscle(draft.muscle);
+  document.getElementById("workout-overlay").style.display = "flex";
+  wmShow("working");
+};
+
+document.getElementById("draft-discard-btn").onclick = function () {
+  clearDraft();
+};
+
 // ── 退出训练 ─────────────────────────────────────────
 document.getElementById("wm-exit-btn").onclick = function () {
   clearInterval(wm.restTimer);
+  wm.restEndTime = 0;
+  var hasSets = wm.sessionLog.some(function (log) {
+    return log.completedSets.length > 0;
+  });
+  if (hasSets) {
+    saveDraft();
+    showToast("已保存草稿 ✓");
+  }
   document.getElementById("workout-overlay").style.display = "none";
 };
 
@@ -744,7 +808,9 @@ document.getElementById("wm-next-ex-btn").onclick = function () {
 // ── 训练完成：自动记录 + 返回 ────────────────────────
 document.getElementById("wm-finish-btn").onclick = function () {
   clearInterval(wm.restTimer);
+  wm.restEndTime = 0;
   wmAutoSave();
+  clearDraft();
   document.getElementById("workout-overlay").style.display = "none";
   showToast("训练已记录 ✓");
 };
@@ -785,6 +851,60 @@ function wmAutoSave() {
   updateStats();
   updateLoadLastBtn();
 }
+
+// ══════════════════════════════════════════════════════
+// 导出 / 导入数据
+// ══════════════════════════════════════════════════════
+
+document.getElementById("export-btn").onclick = function () {
+  var data = { version: 1, exportedAt: new Date().toISOString(), records: records };
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "training-" + getTodayStr() + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+document.getElementById("import-file").onchange = function (e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (ev) {
+    try {
+      var parsed = JSON.parse(ev.target.result);
+      var incoming = Array.isArray(parsed) ? parsed : (parsed.records || []);
+      if (!Array.isArray(incoming) || incoming.length === 0) {
+        showToast("文件格式不正确");
+        return;
+      }
+      // 去重合并：以 date + type + muscle 为 key
+      var existingKeys = {};
+      records.forEach(function (r) {
+        existingKeys[r.date + "|" + r.type + "|" + (r.muscle || "")] = true;
+      });
+      var added = 0;
+      incoming.forEach(function (r) {
+        var key = r.date + "|" + r.type + "|" + (r.muscle || "");
+        if (!existingKeys[key]) {
+          records.push(r);
+          existingKeys[key] = true;
+          added++;
+        }
+      });
+      localStorage.setItem("records", JSON.stringify(records));
+      rebuildList();
+      updateStats();
+      updateLoadLastBtn();
+      showToast("导入成功，新增 " + added + " 条记录 ✓");
+    } catch (err) {
+      showToast("解析失败，请检查文件");
+    }
+    e.target.value = "";
+  };
+  reader.readAsText(file);
+};
 
 // ══════════════════════════════════════════════════════
 // 补录过去训练 Modal
@@ -911,34 +1031,42 @@ function wmShow(state) {
   }
 }
 
-// ── 组间倒计时 ────────────────────────────────────────
+// ── 组间倒计时（基于时间戳，切后台也准确）────────────
 function wmStartRest() {
   clearInterval(wm.restTimer);
-  wm.restSecs = wm.restTotal;
-  wmUpdateTimerDisplay();
-
-  wm.restTimer = setInterval(function () {
-    wm.restSecs--;
-    wmUpdateTimerDisplay();
-
-    if (wm.restSecs <= 0) {
-      clearInterval(wm.restTimer);
-      // 尝试震动提醒（移动端）
-      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      document.getElementById("wm-rest-label").textContent = "开始下一组！";
-      document.getElementById("wm-done-btn").style.display = "block";
-    }
-  }, 1000);
+  wm.restEndTime = Date.now() + wm.restTotal * 1000;
+  wmTickRest();
+  wm.restTimer = setInterval(wmTickRest, 500);
 }
 
-function wmUpdateTimerDisplay() {
-  var m = Math.floor(wm.restSecs / 60);
-  var s = wm.restSecs % 60;
+function wmTickRest() {
+  var remaining = Math.ceil((wm.restEndTime - Date.now()) / 1000);
+  if (remaining < 0) remaining = 0;
+  wmUpdateTimerDisplay(remaining);
+
+  if (remaining <= 0) {
+    clearInterval(wm.restTimer);
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    document.getElementById("wm-rest-label").textContent = "开始下一组！";
+    document.getElementById("wm-done-btn").style.display = "block";
+  }
+}
+
+function wmUpdateTimerDisplay(secs) {
+  var m = Math.floor(secs / 60);
+  var s = secs % 60;
   var text = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
   var el = document.getElementById("wm-timer");
   el.textContent = text;
-  el.className = "wm-timer" + (wm.restSecs <= 10 ? " urgent" : "");
+  el.className = "wm-timer" + (secs <= 10 ? " urgent" : "");
 }
+
+// 切回前台时立即刷新倒计时显示
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden && wm.restEndTime > 0 && wm.restTimer) {
+    wmTickRest();
+  }
+});
 
 function updateStats() {
   var counts = { 健身: 0, 足球: 0, 网球: 0 };

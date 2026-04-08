@@ -404,6 +404,80 @@ button#btn:active { transform: scale(0.98); }
   letter-spacing: 0;
 }
 
+/* ── 右栏 header 右侧区域 ───────────────────────── */
+.panel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── 导出 / 导入按钮 ────────────────────────────── */
+.data-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: var(--border-soft);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.data-btn:hover {
+  background: var(--blue);
+  color: #fff;
+}
+label.data-btn {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* ── 草稿横条 ───────────────────────────────────── */
+.draft-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+#draft-banner-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--blue);
+  flex: 1;
+}
+.draft-banner-actions {
+  display: flex;
+  gap: 8px;
+}
+.draft-resume-btn {
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 5px 14px;
+  cursor: pointer;
+}
+.draft-discard-btn {
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
 /* ── 记录列表（可滚动）──────────────────────────── */
 ul {
   list-style: none;

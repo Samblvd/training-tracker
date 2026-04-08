@@ -39,6 +39,15 @@
         </div>
       </div>
 
+      <!-- 草稿恢复横条（有草稿时显示） -->
+      <div id="draft-banner" style="display:none;" class="draft-banner">
+        <span id="draft-banner-text">继续上次训练</span>
+        <div class="draft-banner-actions">
+          <button id="draft-resume-btn" class="draft-resume-btn">继续</button>
+          <button id="draft-discard-btn" class="draft-discard-btn">丢弃</button>
+        </div>
+      </div>
+
       <div class="form">
 
         <!-- 隐藏字段：类型、部位、日期（JS 读取，默认今天） -->
@@ -107,7 +116,13 @@
     <div class="right-panel">
       <div class="panel-header">
         <span>历史记录</span>
-        <span class="record-count" id="record-count"></span>
+        <div class="panel-header-right">
+          <span class="record-count" id="record-count"></span>
+          <button id="export-btn" class="data-btn" title="导出数据">导出</button>
+          <label id="import-label" class="data-btn" title="导入数据">导入
+            <input type="file" id="import-file" accept=".json" style="display:none;">
+          </label>
+        </div>
       </div>
       <ul id="list"></ul>
     </div>
