@@ -428,9 +428,13 @@ function sanitizeRecords(list) {
   return list.map(normalizeRecord).filter(Boolean);
 }
 
+function isLegacyGymRecord(record) {
+  return !record.type || record.type === "健身";
+}
+
 function normalizeRecord(record) {
   if (!record || typeof record !== "object") return null;
-  if (record.type && record.type !== "健身") return null;
+  if (!isLegacyGymRecord(record)) return null;
 
   var date = typeof record.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(record.date)
     ? record.date
@@ -442,7 +446,6 @@ function normalizeRecord(record) {
 
   return {
     date: date,
-    type: "健身",
     muscle: muscle,
     exercises: exercises,
     note: record.note || "",
@@ -664,7 +667,6 @@ function saveBackfillRecord() {
 
   record = {
     date: date,
-    type: "健身",
     muscle: muscle,
     exercises: exercises,
     note: "",
@@ -1060,7 +1062,6 @@ function wmAutoSave() {
 
   record = {
     date: today,
-    type: "健身",
     muscle: muscle,
     exercises: exercises,
     note: "",
