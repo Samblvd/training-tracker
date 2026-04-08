@@ -602,6 +602,179 @@ document.getElementById("ai-import-btn").onclick = function () {
   closeAiModal();
 };
 
+// ══════════════════════════════════════════════════════
+// 训练中模式
+// ══════════════════════════════════════════════════════
+
+var wm = {
+  exercises:  [],   // [{name, weight, sets, reps}, ...]
+  exIdx:      0,    // 当前动作下标
+  setDone:    0,    // 当前动作已完成组数
+  restTimer:  null, // setInterval 句柄
+  restSecs:   0,    // 当前剩余秒数
+  REST_TOTAL: 90    // 组间休息秒数
+};
+
+// ── 入口：读取已勾选动作，进入训练模式 ──────────────
+document.getElementById("start-workout-btn").onclick = function () {
+  var list = [];
+  document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
+    var cb = row.querySelector("input[type='checkbox']");
+    if (!cb.checked) return;
+    list.push({
+      name:   cb.value,
+      weight: row.querySelector(".input-weight").value || "—",
+      sets:   parseInt(row.querySelector(".input-sets").value)  || 3,
+      reps:   row.querySelector(".input-reps").value  || "—"
+    });
+  });
+
+  if (list.length === 0) {
+    showToast("请先勾选动作");
+    return;
+  }
+
+  wm.exercises = list;
+  wm.exIdx     = 0;
+  wm.setDone   = 0;
+  clearInterval(wm.restTimer);
+
+  document.getElementById("workout-overlay").style.display = "flex";
+  wmShow("working");
+};
+
+// ── 退出训练 ─────────────────────────────────────────
+document.getElementById("wm-exit-btn").onclick = function () {
+  clearInterval(wm.restTimer);
+  document.getElementById("workout-overlay").style.display = "none";
+};
+
+// ── 完成本组 ─────────────────────────────────────────
+document.getElementById("wm-done-btn").onclick = function () {
+  wm.setDone++;
+  var ex = wm.exercises[wm.exIdx];
+
+  if (wm.setDone >= ex.sets) {
+    // 当前动作全部组数完成
+    clearInterval(wm.restTimer);
+    wmShow("ex-done");
+  } else {
+    // 开始组间休息
+    wmShow("resting");
+  }
+};
+
+// ── 跳过休息 ─────────────────────────────────────────
+document.getElementById("wm-skip-btn").onclick = function () {
+  clearInterval(wm.restTimer);
+  wmShow("working");
+};
+
+// ── 进入下一动作 ─────────────────────────────────────
+document.getElementById("wm-next-ex-btn").onclick = function () {
+  wm.exIdx++;
+  wm.setDone = 0;
+  wmShow("working");
+};
+
+// ── 训练完成，返回 ────────────────────────────────────
+document.getElementById("wm-finish-btn").onclick = function () {
+  clearInterval(wm.restTimer);
+  document.getElementById("workout-overlay").style.display = "none";
+};
+
+// ── 核心渲染：根据状态更新面板 ───────────────────────
+function wmShow(state) {
+  var ex = wm.exercises[wm.exIdx];
+
+  // 隐藏所有子区块
+  document.getElementById("wm-main").style.display    = "none";
+  document.getElementById("wm-ex-done").style.display = "none";
+  document.getElementById("wm-all-done").style.display = "none";
+
+  if (state === "working") {
+    document.getElementById("wm-main").style.display = "flex";
+    document.getElementById("wm-main").style.flexDirection = "column";
+    document.getElementById("wm-main").style.alignItems = "center";
+    document.getElementById("wm-rest-area").style.display = "none";
+    document.getElementById("wm-done-btn").style.display = "block";
+
+    document.getElementById("wm-ex-name").textContent  = ex.name;
+    document.getElementById("wm-target").textContent   =
+      ex.weight + " kg  ×  " + ex.sets + " 组  ×  " + ex.reps + " 次";
+    document.getElementById("wm-progress").textContent =
+      "第 " + (wm.setDone + 1) + " / " + ex.sets + " 组";
+
+  } else if (state === "resting") {
+    document.getElementById("wm-main").style.display = "flex";
+    document.getElementById("wm-main").style.flexDirection = "column";
+    document.getElementById("wm-main").style.alignItems = "center";
+    document.getElementById("wm-rest-area").style.display = "flex";
+    document.getElementById("wm-done-btn").style.display = "none";
+
+    document.getElementById("wm-ex-name").textContent  = ex.name;
+    document.getElementById("wm-target").textContent   =
+      ex.weight + " kg  ×  " + ex.sets + " 组  ×  " + ex.reps + " 次";
+    document.getElementById("wm-progress").textContent =
+      "已完成 " + wm.setDone + " / " + ex.sets + " 组";
+
+    wmStartRest();
+
+  } else if (state === "ex-done") {
+    document.getElementById("wm-ex-done").style.display = "flex";
+    document.getElementById("wm-ex-done").style.flexDirection = "column";
+    document.getElementById("wm-ex-done").style.alignItems = "center";
+
+    document.getElementById("wm-done-msg").textContent = ex.name + " 完成！";
+
+    if (wm.exIdx + 1 < wm.exercises.length) {
+      var next = wm.exercises[wm.exIdx + 1];
+      document.getElementById("wm-next-hint").textContent = "下一个：" + next.name;
+      document.getElementById("wm-next-ex-btn").style.display = "block";
+      document.getElementById("wm-finish-btn").style.display  = "none";
+    } else {
+      document.getElementById("wm-next-hint").textContent = "所有动作已完成";
+      document.getElementById("wm-next-ex-btn").style.display = "none";
+      // 短暂延迟后自动跳到 all-done
+      setTimeout(function () { wmShow("all-done"); }, 1200);
+    }
+
+  } else if (state === "all-done") {
+    document.getElementById("wm-all-done").style.display = "flex";
+    document.getElementById("wm-all-done").style.flexDirection = "column";
+    document.getElementById("wm-all-done").style.alignItems = "center";
+  }
+}
+
+// ── 组间倒计时 ────────────────────────────────────────
+function wmStartRest() {
+  clearInterval(wm.restTimer);
+  wm.restSecs = wm.REST_TOTAL;
+  wmUpdateTimerDisplay();
+
+  wm.restTimer = setInterval(function () {
+    wm.restSecs--;
+    wmUpdateTimerDisplay();
+
+    if (wm.restSecs <= 0) {
+      clearInterval(wm.restTimer);
+      // 尝试震动提醒（移动端）
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      document.getElementById("wm-rest-label").textContent = "开始下一组！";
+      document.getElementById("wm-done-btn").style.display = "block";
+    }
+  }, 1000);
+}
+
+function wmUpdateTimerDisplay() {
+  var m = Math.floor(wm.restSecs / 60);
+  var s = wm.restSecs % 60;
+  var text = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  var el = document.getElementById("wm-timer");
+  el.textContent = text;
+  el.className = "wm-timer" + (wm.restSecs <= 10 ? " urgent" : "");
+}
+
 function updateStats() {
   var counts = { 健身: 0, 足球: 0, 网球: 0 };
   records.forEach(function (r) {

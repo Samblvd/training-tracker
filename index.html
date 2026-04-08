@@ -93,6 +93,7 @@
 
         <div class="form-bottom">
           <input type="text" id="note" placeholder="备注（可选）">
+          <button id="start-workout-btn" type="button">开始训练</button>
           <button id="btn">添加记录</button>
         </div>
 
@@ -189,6 +190,51 @@
         <button class="modal-close" id="compare-modal-close">×</button>
       </div>
       <div class="modal-body" id="compare-body"></div>
+    </div>
+  </div>
+
+  <!-- 训练中模式面板 -->
+  <div id="workout-overlay" class="workout-overlay" style="display:none;">
+    <div class="wm-panel">
+
+      <div class="wm-header">
+        <span class="wm-header-title">训练中</span>
+        <button id="wm-exit-btn" class="wm-exit-btn">退出训练</button>
+      </div>
+
+      <div class="wm-body">
+
+        <!-- working / resting 状态 -->
+        <div id="wm-main">
+          <div class="wm-ex-name" id="wm-ex-name"></div>
+          <div class="wm-target" id="wm-target"></div>
+          <div class="wm-progress" id="wm-progress"></div>
+
+          <button id="wm-done-btn" class="wm-done-btn">完成本组</button>
+
+          <div id="wm-rest-area" class="wm-rest-area" style="display:none;">
+            <div class="wm-rest-label" id="wm-rest-label">休息中</div>
+            <div class="wm-timer" id="wm-timer">01:30</div>
+            <button id="wm-skip-btn" class="wm-skip-btn">跳过休息</button>
+          </div>
+        </div>
+
+        <!-- ex-done 状态 -->
+        <div id="wm-ex-done" style="display:none;">
+          <div class="wm-done-icon">✓</div>
+          <div class="wm-done-msg" id="wm-done-msg"></div>
+          <div class="wm-next-hint" id="wm-next-hint"></div>
+          <button id="wm-next-ex-btn" class="wm-done-btn">进入下一动作</button>
+        </div>
+
+        <!-- all-done 状态 -->
+        <div id="wm-all-done" style="display:none;">
+          <div class="wm-done-icon">🎉</div>
+          <div class="wm-done-msg">训练完成！</div>
+          <button id="wm-finish-btn" class="wm-done-btn">返回记录</button>
+        </div>
+
+      </div>
     </div>
   </div>
 
