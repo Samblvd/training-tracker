@@ -193,6 +193,8 @@ var muscleTagClass = {
 var editingIndex = -1;
 var toastTimer = null;
 var aiSelection = { muscle: "胸", goal: "增肌", duration: "45", equipment: "健身房" };
+var aiGeneratedPlan = null;
+var editorPlanMeta = {};
 var records = sanitizeRecords(JSON.parse(localStorage.getItem("records") || "[]"));
 
 var wm = {
@@ -203,7 +205,8 @@ var wm = {
   restEndTime: 0,
   restTotal: 90,
   sessionLog: [],
-  exDoneTimer: null
+  exDoneTimer: null,
+  summary: null
 };
 
 persistRecords();
@@ -269,6 +272,7 @@ document.getElementById("draft-discard-btn").onclick = function () {
 
 document.getElementById("ai-open-btn").onclick = function () {
   aiSelection.muscle = getCurrentMuscle();
+  aiGeneratedPlan = null;
   syncAiSelectionUI();
   document.getElementById("ai-result").style.display = "none";
   document.getElementById("ai-modal").style.display = "flex";
@@ -294,6 +298,7 @@ document.getElementById("ai-modal").onclick = function (e) {
     });
     btn.classList.add("active");
     aiSelection[keyMap[groupId]] = btn.dataset.value;
+    aiGeneratedPlan = null;
   });
 });
 
@@ -301,8 +306,8 @@ document.getElementById("ai-generate-btn").onclick = renderAiResult;
 document.getElementById("ai-regen-btn").onclick = renderAiResult;
 document.getElementById("ai-import-btn").onclick = function () {
   var muscle = normalizeMuscle(aiSelection.muscle);
-  var plan = getAiPlan(muscle, aiSelection.goal);
-  applyPlanToEditor(muscle, plan, true);
+  var plan = aiGeneratedPlan || getAiPlan(muscle, aiSelection.goal, aiSelection.duration);
+  applyPlanToEditor(muscle, plan.exercises, true);
   closeAiModal();
   showToast("AI 计划已导入");
 };
@@ -382,8 +387,8 @@ document.getElementById("wm-exit-btn").onclick = function () {
 document.getElementById("wm-done-btn").onclick = function () {
   var exercise = wm.exercises[wm.exIdx];
   var actualWeight = document.getElementById("wm-input-weight").value || exercise.weight;
-  var actualReps = document.getElementById("wm-input-reps").value || exercise.reps;
-  var restSecs = parseInt(document.getElementById("wm-input-rest").value, 10) || 90;
+  var actualReps = document.getElementById("wm-input-reps").value || getRepInputValue(exercise.reps);
+  var restSecs = parseInt(document.getElementById("wm-input-rest").value, 10) || parseInt(exercise.rest, 10) || 90;
 
   wm.restTotal = restSecs;
   wm.sessionLog[wm.exIdx].completedSets.push({
@@ -507,7 +512,10 @@ function normalizeExercise(exercise) {
     name: normalizeExerciseName(exercise.name),
     weight: exercise.weight === undefined || exercise.weight === null ? "" : String(exercise.weight),
     sets: exercise.sets === undefined || exercise.sets === null ? "" : String(exercise.sets),
-    reps: exercise.reps === undefined || exercise.reps === null ? "" : String(exercise.reps)
+    reps: exercise.reps === undefined || exercise.reps === null ? "" : String(exercise.reps),
+    rest: exercise.rest === undefined || exercise.rest === null ? "" : String(exercise.rest),
+    intensity: exercise.intensity || "",
+    progression: exercise.progression || ""
   };
 }
 
@@ -611,10 +619,17 @@ function applyPlanToEditor(muscle, plan, shouldShowSection) {
   setMuscle(muscle);
 
   var planMap = {};
+  editorPlanMeta = {};
   (plan || []).forEach(function (exercise) {
     var normalized = normalizeExercise(exercise);
     if (normalized) {
       planMap[normalized.name] = normalized;
+      editorPlanMeta[normalized.name] = {
+        rest: exercise.rest || "",
+        intensity: exercise.intensity || "",
+        progression: exercise.progression || "",
+        reps: exercise.reps !== undefined ? String(exercise.reps) : normalized.reps
+      };
     }
   });
 
@@ -626,7 +641,7 @@ function applyPlanToEditor(muscle, plan, shouldShowSection) {
     row.classList.toggle("is-checked", !!selected);
     row.querySelector(".input-weight").value = selected ? selected.weight : "";
     row.querySelector(".input-sets").value = selected ? selected.sets : "";
-    row.querySelector(".input-reps").value = selected ? selected.reps : "";
+    row.querySelector(".input-reps").value = selected ? getRepInputValue(selected.reps) : "";
   });
 
   if (shouldShowSection) showExerciseSection();
@@ -641,11 +656,15 @@ function collectSelectedExercises() {
   document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
     var checkbox = row.querySelector("input[type='checkbox']");
     if (!checkbox.checked) return;
+    var meta = editorPlanMeta[checkbox.value] || {};
     selected.push({
       name: checkbox.value,
       weight: row.querySelector(".input-weight").value,
       sets: row.querySelector(".input-sets").value,
-      reps: row.querySelector(".input-reps").value
+      reps: meta.reps || row.querySelector(".input-reps").value,
+      rest: meta.rest || "",
+      intensity: meta.intensity || "",
+      progression: meta.progression || ""
     });
   });
   return selected;
@@ -657,7 +676,10 @@ function collectExercisesForWorkout() {
       name: exercise.name,
       weight: exercise.weight || "—",
       sets: parseInt(exercise.sets, 10) || 3,
-      reps: exercise.reps || "—"
+      reps: exercise.reps || "—",
+      rest: parseInt(exercise.rest, 10) || 90,
+      intensity: exercise.intensity || "",
+      progression: exercise.progression || ""
     };
   });
 }
@@ -689,6 +711,7 @@ function resetComposer() {
 }
 
 function clearExerciseInputs() {
+  editorPlanMeta = {};
   document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
     row.classList.remove("is-checked");
     row.querySelectorAll("input").forEach(function (input) {
@@ -892,6 +915,274 @@ function updateStats() {
   document.getElementById("record-count").textContent = records.length + " 条";
 }
 
+function findExerciseDefinition(name) {
+  var normalizedName = normalizeExerciseName(name);
+  var muscles = Object.keys(exerciseLibrary);
+
+  for (var i = 0; i < muscles.length; i++) {
+    var match = exerciseLibrary[muscles[i]].find(function (exercise) {
+      return exercise.name === normalizedName;
+    });
+    if (match) return match;
+  }
+
+  return null;
+}
+
+function parseWeightNumber(value) {
+  if (value === undefined || value === null || value === "") return null;
+  var parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatWeightValue(value) {
+  if (value === undefined || value === null || value === "") return "";
+  if (!Number.isFinite(value)) return String(value);
+  if (Math.abs(value) < 0.001) return "0";
+  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+}
+
+function toRepRange(value) {
+  if (typeof value === "string" && value.indexOf("-") >= 0) return value;
+  var reps = parseInt(value, 10);
+  if (!reps) return "";
+  if (reps <= 10) return reps + "-" + (reps + 2);
+  if (reps <= 12) return reps + "-" + (reps + 3);
+  return reps + "-" + (reps + 5);
+}
+
+function getRepInputValue(repsRange) {
+  if (repsRange === undefined || repsRange === null) return "";
+  var range = String(repsRange);
+  if (range.indexOf("-") === -1) return range;
+  return range.split("-")[0];
+}
+
+function parseRepRange(value) {
+  var range = String(value || "");
+  var parts;
+  var low;
+  var high;
+
+  if (!range) return { low: 0, high: 0 };
+  if (range.indexOf("-") === -1) {
+    low = parseInt(range, 10) || 0;
+    return { low: low, high: low };
+  }
+
+  parts = range.split("-");
+  low = parseInt(parts[0], 10) || 0;
+  high = parseInt(parts[1], 10) || low;
+  return { low: low, high: high };
+}
+
+function getLastWorkoutByMuscle(muscle, options) {
+  var targetMuscle = normalizeMuscle(muscle);
+  var shouldExcludeCurrentSession = options && options.excludeCurrentSession;
+  var today = getTodayStr();
+
+  for (var i = records.length - 1; i >= 0; i--) {
+    var record = records[i];
+    if (record.muscle !== targetMuscle || !record.exercises || !record.exercises.length) continue;
+    if (shouldExcludeCurrentSession && record._wmSession && record.date === today && record.muscle === targetMuscle) continue;
+    return record;
+  }
+
+  return null;
+}
+
+function getExerciseHistory(exerciseName, limit, options) {
+  var history = [];
+  var normalizedName = normalizeExerciseName(exerciseName);
+  var targetMuscle = options && options.muscle ? normalizeMuscle(options.muscle) : "";
+  var shouldExcludeCurrentSession = options && options.excludeCurrentSession;
+  var today = getTodayStr();
+
+  for (var i = records.length - 1; i >= 0; i--) {
+    var record = records[i];
+    var exercises = record.exercises || [];
+
+    if (targetMuscle && record.muscle !== targetMuscle) continue;
+    if (shouldExcludeCurrentSession && record._wmSession && record.date === today && (!targetMuscle || record.muscle === targetMuscle)) continue;
+
+    for (var j = 0; j < exercises.length; j++) {
+      var exercise = exercises[j];
+      if (normalizeExerciseName(exercise.name) !== normalizedName) continue;
+      history.push({
+        name: normalizedName,
+        date: record.date,
+        muscle: record.muscle,
+        weight: exercise.weight,
+        weightNum: parseWeightNumber(exercise.weight),
+        sets: exercise.sets,
+        setsNum: parseInt(exercise.sets, 10) || 0,
+        reps: exercise.reps,
+        repsNum: parseInt(exercise.reps, 10) || 0
+      });
+      break;
+    }
+
+    if (limit && history.length >= limit) break;
+  }
+
+  return history;
+}
+
+function getLastExerciseData(exerciseName, options) {
+  var history = getExerciseHistory(exerciseName, 1, options);
+  return history.length ? history[0] : null;
+}
+
+function getHistoryWeight(name) {
+  var last = getLastExerciseData(name);
+  return last ? last.weightNum : null;
+}
+
+function getDefaultInitialWeight(template) {
+  var baseWeight = parseWeightNumber(template.weight);
+  return baseWeight === null ? "" : formatWeightValue(baseWeight);
+}
+
+function getAiIntensity(goal, status) {
+  if (goal === "恢复") return "RPE 6-7，动作质量优先";
+  if (status === "push") return "RPE 8，最后 1 组保留 1 次余力";
+  if (status === "hold") return "RPE 7-8，稳定完成所有组";
+  return "RPE 7，先把动作和次数做稳";
+}
+
+function getAiRestSeconds(exerciseName, goal, status) {
+  var exercise = findExerciseDefinition(exerciseName);
+  if (!exercise) return goal === "增肌" ? 90 : 75;
+  if (exercise.type === "复合") {
+    if (status === "reduce") return 120;
+    return goal === "增肌" ? 120 : 90;
+  }
+  return goal === "恢复" ? 60 : 75;
+}
+
+function getWeightStep(exerciseName) {
+  var exercise = findExerciseDefinition(exerciseName);
+  if (!exercise) return 2.5;
+  if (exercise.equipment === "杠铃") return 2.5;
+  if (exercise.equipment === "哑铃") return 2;
+  if (exercise.equipment === "器械" || exercise.equipment === "绳索") return 5;
+  return 0;
+}
+
+function bumpWeight(weight, exerciseName, factor) {
+  var step = getWeightStep(exerciseName);
+  var next = weight * factor;
+  var rounded;
+  if (!step) return next;
+  rounded = Math.round(next / step) * step;
+  if (factor > 1 && rounded <= weight) return weight + step;
+  if (factor < 1 && rounded >= weight) return Math.max(0, weight - step);
+  return rounded;
+}
+
+function getProgressionHint(exerciseName, status, baseWeight) {
+  var exercise = findExerciseDefinition(exerciseName);
+  var nextWeight;
+  if (exercise && exercise.equipment === "徒手") {
+    return "如果全部完成，下次先增加 1-2 次，或增加轻负重。";
+  }
+  if (baseWeight === null) {
+    return "如果全部完成，下次加 2%-5% 或上调 1 档。";
+  }
+  if (status === "push") {
+    nextWeight = formatWeightValue(bumpWeight(baseWeight, exerciseName, 1.03));
+    return "如果全部完成，下次可以尝试 " + nextWeight + "kg。";
+  }
+  if (status === "reduce") {
+    return "先保持动作稳定和次数达标，再考虑回到更高重量。";
+  }
+  return "先保持当前重量，把所有组都做到区间上限再加重。";
+}
+
+function getExerciseOutcome(lastExercise, repRange, targetSets) {
+  if (!lastExercise) return "new";
+  if (lastExercise.setsNum >= targetSets && lastExercise.repsNum >= repRange.high) return "push";
+  if (lastExercise.repsNum < repRange.low || lastExercise.setsNum < targetSets) return "reduce";
+  return "hold";
+}
+
+function getAiWeightSuggestion(template, goal, lastExercise, recentHistory, repRange, targetSets) {
+  var baseWeight = lastExercise && lastExercise.weightNum !== null
+    ? lastExercise.weightNum
+    : parseWeightNumber(template.weight);
+  var outcome = getExerciseOutcome(lastExercise, repRange, targetSets);
+  var allStableRecent = recentHistory.length >= 4 && recentHistory.slice(0, 4).every(function (item) {
+    return item.setsNum >= targetSets && item.repsNum >= repRange.low;
+  });
+  var nextWeight = baseWeight;
+
+  if (baseWeight === null) {
+    return {
+      weight: getDefaultInitialWeight(template),
+      status: "new"
+    };
+  }
+
+  if (outcome === "push") {
+    nextWeight = bumpWeight(baseWeight, template.name, allStableRecent ? 1.05 : 1.03);
+  } else if (outcome === "reduce") {
+    nextWeight = bumpWeight(baseWeight, template.name, 0.98);
+  }
+
+  if (goal === "恢复" && outcome === "push") {
+    nextWeight = baseWeight;
+    outcome = "hold";
+  }
+
+  return {
+    weight: formatWeightValue(nextWeight),
+    status: outcome
+  };
+}
+
+function buildAiExercise(template, goal, lastWorkoutMap) {
+  var normalizedName = normalizeExerciseName(template.name);
+  var lastWorkoutExercise = lastWorkoutMap[normalizedName] || null;
+  var lastExercise = getLastExerciseData(normalizedName) || lastWorkoutExercise;
+  var targetSets = parseInt(template.sets, 10) || (lastWorkoutExercise ? parseInt(lastWorkoutExercise.sets, 10) : 0) || 3;
+  var repRange = parseRepRange(toRepRange(template.reps || (lastWorkoutExercise ? lastWorkoutExercise.reps : "")));
+  var recentHistory = getExerciseHistory(normalizedName, 4);
+  var weightSuggestion = getAiWeightSuggestion(template, goal, lastExercise, recentHistory, repRange, targetSets);
+
+  return {
+    name: normalizedName,
+    sets: targetSets,
+    reps: repRange.low && repRange.high ? repRange.low + "-" + repRange.high : toRepRange(template.reps),
+    weight: weightSuggestion.weight,
+    rest: getAiRestSeconds(normalizedName, goal, weightSuggestion.status),
+    intensity: getAiIntensity(goal, weightSuggestion.status),
+    progression: getProgressionHint(normalizedName, weightSuggestion.status, parseWeightNumber(weightSuggestion.weight))
+  };
+}
+
+function buildAiPlan(muscle, goal, duration) {
+  var normalizedMuscle = normalizeMuscle(muscle);
+  var basePlan = (mockPlans[normalizedMuscle] && mockPlans[normalizedMuscle][goal]) || defaultPlans[normalizedMuscle] || [];
+  var lastWorkout = getLastWorkoutByMuscle(normalizedMuscle);
+  var lastWorkoutMap = {};
+
+  if (lastWorkout && lastWorkout.exercises) {
+    lastWorkout.exercises.forEach(function (exercise) {
+      lastWorkoutMap[normalizeExerciseName(exercise.name)] = exercise;
+    });
+  }
+
+  return {
+    muscle: normalizedMuscle,
+    goal: goal,
+    duration: parseInt(duration, 10) || 45,
+    exercises: basePlan.map(function (exercise) {
+      return buildAiExercise(exercise, goal, lastWorkoutMap);
+    }),
+    lastWorkoutDate: lastWorkout ? lastWorkout.date : ""
+  };
+}
+
 function closeAiModal() {
   document.getElementById("ai-modal").style.display = "none";
 }
@@ -909,20 +1200,26 @@ function syncAiSelectionUI() {
   });
 }
 
-function getAiPlan(muscle, goal) {
-  return (mockPlans[muscle] && mockPlans[muscle][goal]) || defaultPlans[muscle] || [];
+function getAiPlan(muscle, goal, duration) {
+  return buildAiPlan(muscle, goal, duration || aiSelection.duration);
 }
 
 function renderAiResult() {
   var muscle = normalizeMuscle(aiSelection.muscle);
-  var plan = getAiPlan(muscle, aiSelection.goal);
+  var plan = getAiPlan(muscle, aiSelection.goal, aiSelection.duration);
   var title = document.getElementById("ai-result-title");
   var list = document.getElementById("ai-result-list");
 
-  title.textContent = muscle + " · " + aiSelection.goal + " · " + aiSelection.duration + " 分钟（" + aiSelection.equipment + "）";
+  aiGeneratedPlan = plan;
+  title.textContent = [
+    plan.muscle + " · " + plan.goal,
+    plan.duration + " 分钟",
+    aiSelection.equipment,
+    plan.lastWorkoutDate ? "参考上次：" + plan.lastWorkoutDate : "首次使用该部位模板"
+  ].join(" · ");
   list.innerHTML = "";
 
-  plan.forEach(function (exercise) {
+  plan.exercises.forEach(function (exercise) {
     var row = document.createElement("div");
     row.className = "ai-ex-row";
 
@@ -934,16 +1231,19 @@ function renderAiResult() {
     name.textContent = exercise.name;
     left.appendChild(name);
 
-    if (exercise.note) {
-      var note = document.createElement("span");
-      note.className = "ai-ex-note";
-      note.textContent = exercise.note;
-      left.appendChild(note);
-    }
+    var note = document.createElement("span");
+    note.className = "ai-ex-note";
+    note.textContent = exercise.intensity + " · 休息 " + exercise.rest + " 秒";
+    left.appendChild(note);
 
     var detail = document.createElement("span");
     detail.className = "ai-ex-detail";
     detail.textContent = [exercise.weight + " kg", exercise.sets + " 组", exercise.reps + " 次"].join(" × ");
+
+    var progression = document.createElement("span");
+    progression.className = "ai-ex-note";
+    progression.textContent = exercise.progression;
+    left.appendChild(progression);
 
     row.appendChild(left);
     row.appendChild(detail);
@@ -1045,13 +1345,17 @@ function startWorkoutSession(plan) {
   wm.exIdx = 0;
   wm.setDone = 0;
   wm.restEndTime = 0;
-  wm.restTotal = 90;
+  wm.restTotal = plan.length ? (parseInt(plan[0].rest, 10) || 90) : 90;
+  wm.summary = null;
   wm.sessionLog = plan.map(function (exercise) {
     return {
       name: exercise.name,
       targetWeight: exercise.weight,
       targetSets: exercise.sets,
       targetReps: exercise.reps,
+      targetRest: exercise.rest || 90,
+      intensity: exercise.intensity || "",
+      progression: exercise.progression || "",
       completedSets: []
     };
   });
@@ -1076,6 +1380,7 @@ function wmAdvanceToNextExercise() {
   if (wm.exIdx + 1 < wm.exercises.length) {
     wm.exIdx++;
     wm.setDone = 0;
+    wm.restTotal = parseInt(wm.exercises[wm.exIdx].rest, 10) || 90;
     wmShow("working");
     return;
   }
@@ -1135,6 +1440,121 @@ function wmAutoSave() {
   updateLoadLastBtn();
 }
 
+function getWorkoutVolume() {
+  return wm.sessionLog.reduce(function (sum, item) {
+    return sum + item.completedSets.reduce(function (setSum, set) {
+      var weight = parseWeightNumber(set.weight);
+      var reps = parseInt(set.reps, 10) || 0;
+      if (weight === null || !reps) return setSum;
+      return setSum + weight * reps;
+    }, 0);
+  }, 0);
+}
+
+function getWeightIncreaseText(weight, exerciseName) {
+  var parsedWeight = parseWeightNumber(weight);
+  var nextWeight;
+  if (parsedWeight === null) return "下次尝试增加 2%-5% 的重量";
+  nextWeight = formatWeightValue(bumpWeight(parsedWeight, exerciseName, 1.03));
+  return "下次可以尝试 " + nextWeight + "kg";
+}
+
+function buildWorkoutSummary() {
+  var summary = {
+    totalExercises: 0,
+    totalSets: getWorkoutCompletedSetCount(),
+    totalVolume: formatWeightValue(getWorkoutVolume()),
+    improvements: [],
+    cautions: [],
+    suggestions: []
+  };
+
+  wm.sessionLog.forEach(function (item) {
+    var completedSets = item.completedSets;
+    var lastSet;
+    var previous;
+    var targetRange;
+    var actualWeight;
+    var actualReps;
+    var targetSets;
+    var targetRest;
+
+    if (!completedSets.length) return;
+
+    summary.totalExercises++;
+    lastSet = completedSets[completedSets.length - 1];
+    previous = getLastExerciseData(item.name, { excludeCurrentSession: true });
+    targetRange = parseRepRange(item.targetReps);
+    actualWeight = parseWeightNumber(lastSet.weight);
+    actualReps = parseInt(lastSet.reps, 10) || 0;
+    targetSets = parseInt(item.targetSets, 10) || completedSets.length;
+    targetRest = parseInt(item.targetRest, 10) || 90;
+
+    if (previous) {
+      if (actualWeight !== null && previous.weightNum !== null && actualWeight > previous.weightNum) {
+        summary.improvements.push(item.name + "：重量从 " + formatWeightValue(previous.weightNum) + "kg 提升到 " + formatWeightValue(actualWeight) + "kg");
+      } else if (actualWeight !== null && previous.weightNum !== null && Math.abs(actualWeight - previous.weightNum) < 0.001 && actualReps > previous.repsNum) {
+        summary.improvements.push(item.name + "：同重量多做了 " + (actualReps - previous.repsNum) + " 次");
+      } else if (completedSets.length > previous.setsNum) {
+        summary.improvements.push(item.name + "：比上次多完成了 " + (completedSets.length - previous.setsNum) + " 组");
+      }
+    }
+
+    if (targetRange.low && actualReps < targetRange.low) {
+      summary.cautions.push(item.name + "：最后一组只有 " + actualReps + " 次，低于目标下限");
+    } else if (completedSets.length < targetSets) {
+      summary.cautions.push(item.name + "：只完成了 " + completedSets.length + "/" + targetSets + " 组");
+    }
+
+    if (targetRange.high && actualReps >= targetRange.high && completedSets.length >= targetSets) {
+      summary.suggestions.push(item.name + "：" + getWeightIncreaseText(lastSet.weight, item.name));
+    } else if (targetRange.low && actualReps < targetRange.low) {
+      summary.suggestions.push(item.name + "：保持当前重量，休息时间可延长到 " + Math.max(targetRest, 120) + " 秒");
+    } else {
+      summary.suggestions.push(item.name + "：保持当前重量，先把次数做满");
+    }
+  });
+
+  if (!summary.improvements.length) summary.improvements.push("今天以稳定完成训练为主，暂无明显进步动作。");
+  if (!summary.cautions.length) summary.cautions.push("整体完成度不错，没有明显掉速动作。");
+
+  summary.suggestions = summary.suggestions.filter(function (text, index, arr) {
+    return arr.indexOf(text) === index;
+  }).slice(0, 3);
+
+  return summary;
+}
+
+function renderWorkoutSummary() {
+  var summary = wm.summary || buildWorkoutSummary();
+  var metrics = document.getElementById("wm-summary-metrics");
+  var progress = document.getElementById("wm-summary-progress");
+  var cautions = document.getElementById("wm-summary-cautions");
+  var suggestions = document.getElementById("wm-summary-suggestions");
+
+  wm.summary = summary;
+  document.getElementById("wm-all-summary").textContent =
+    "共完成 " + summary.totalExercises + " 个动作 · " + summary.totalSets + " 组 · 训练量 " + summary.totalVolume;
+
+  metrics.innerHTML = [
+    '<div class="wm-summary-metric"><span class="wm-summary-num">' + summary.totalExercises + '</span><span class="wm-summary-label">动作</span></div>',
+    '<div class="wm-summary-metric"><span class="wm-summary-num">' + summary.totalSets + '</span><span class="wm-summary-label">总组数</span></div>',
+    '<div class="wm-summary-metric"><span class="wm-summary-num">' + summary.totalVolume + '</span><span class="wm-summary-label">训练量</span></div>'
+  ].join("");
+
+  progress.innerHTML = summary.improvements.map(function (item) {
+    return '<div class="wm-summary-item">' + item + '</div>';
+  }).join("");
+
+  cautions.innerHTML = summary.cautions.slice(0, 3).map(function (item) {
+    return '<div class="wm-summary-item">' + item + '</div>';
+  }).join("");
+
+  suggestions.innerHTML = summary.suggestions.map(function (item) {
+    return '<div class="wm-summary-item">' + item + '</div>';
+  }).join("");
+}
+
 function wmRenderSetsDone() {
   var list = document.getElementById("wm-sets-done");
   var sets = wm.sessionLog[wm.exIdx].completedSets;
@@ -1178,8 +1598,8 @@ function wmShow(state) {
     document.getElementById("wm-progress").textContent =
       "第 " + (wm.setDone + 1) + " / " + exercise.sets + " 组";
     document.getElementById("wm-input-weight").value = prev ? prev.weight : exercise.weight;
-    document.getElementById("wm-input-reps").value = prev ? prev.reps : exercise.reps;
-    document.getElementById("wm-input-rest").value = wm.restTotal;
+    document.getElementById("wm-input-reps").value = prev ? prev.reps : getRepInputValue(exercise.reps);
+    document.getElementById("wm-input-rest").value = parseInt(exercise.rest, 10) || wm.restTotal;
     wmRenderSetsDone();
     return;
   }
@@ -1199,6 +1619,7 @@ function wmShow(state) {
     exDone.style.alignItems = "center";
     exDone.style.width = "100%";
     document.getElementById("wm-done-msg").textContent = exercise.name;
+    document.getElementById("wm-next-ex-btn").textContent = "进入下一动作";
 
     if (nextExercise) {
       document.getElementById("wm-next-hint").textContent = "下一动作：" + nextExercise.name;
@@ -1221,8 +1642,7 @@ function wmShow(state) {
   allDone.style.flexDirection = "column";
   allDone.style.alignItems = "center";
   allDone.style.width = "100%";
-  document.getElementById("wm-all-summary").textContent =
-    "共完成 " + wm.exercises.length + " 个动作 · " + getWorkoutCompletedSetCount() + " 组";
+  renderWorkoutSummary();
   document.getElementById("wm-next-ex-btn").textContent = "进入下一动作";
 }
 
