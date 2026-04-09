@@ -10,7 +10,11 @@
   <div class="app">
     <div class="left-panel">
       <div class="left-header">
-        <h1>训练记录</h1>
+        <div class="hero-copy">
+          <span class="hero-kicker">今日训练</span>
+          <h1>训练记录</h1>
+          <p class="hero-subtitle">选择今天训练部位，开始训练。</p>
+        </div>
         <span class="today-date" id="today-date"></span>
       </div>
 
@@ -43,23 +47,50 @@
         <input type="hidden" id="muscle" value="胸">
 
         <div class="home-core">
-          <div class="prep-section">
-            <span class="prep-label">训练部位</span>
-            <div class="pill-group" id="muscle-pills">
-              <button class="pill active" data-value="胸">胸</button>
-              <button class="pill" data-value="肩">肩</button>
-              <button class="pill" data-value="背">背</button>
-              <button class="pill" data-value="臀腿">臀腿</button>
+          <div class="home-main-card">
+            <div class="home-section-copy">
+              <span class="prep-label">开始今天训练</span>
+              <p class="section-note">先选训练部位，再直接进入训练中模式。</p>
+            </div>
+
+            <div class="prep-section">
+              <span class="prep-label">训练部位</span>
+              <div class="pill-group" id="muscle-pills">
+                <button class="pill active" data-value="胸">
+                  <span class="pill-title">胸</span>
+                  <span class="pill-note">卧推、夹胸、推胸</span>
+                </button>
+                <button class="pill" data-value="肩">
+                  <span class="pill-title">肩</span>
+                  <span class="pill-note">推举、侧平举、后束</span>
+                </button>
+                <button class="pill" data-value="背">
+                  <span class="pill-title">背</span>
+                  <span class="pill-note">下拉、划船、二头</span>
+                </button>
+                <button class="pill" data-value="臀腿">
+                  <span class="pill-title">臀腿</span>
+                  <span class="pill-note">深蹲、硬拉、腿举</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="main-actions">
+              <button id="start-workout-btn" type="button" class="btn-primary-workout">开始训练</button>
+              <p class="start-caption">无需先填表，系统会直接用你当前的训练计划开始记录。</p>
             </div>
           </div>
 
-          <div class="main-actions">
-            <button id="start-workout-btn" type="button" class="btn-primary-workout">开始训练</button>
-          </div>
+          <div class="tool-card">
+            <div class="home-section-copy">
+              <span class="prep-label">计划工具</span>
+              <p class="section-note">需要的话，再用 AI 帮你排计划或自己编辑动作。</p>
+            </div>
 
-          <div class="prep-action-row">
-            <button type="button" class="ai-entry-btn" id="ai-open-btn">AI 生成今日计划</button>
-            <button type="button" class="manual-btn" id="manual-arrange-btn">自己选动作</button>
+            <div class="prep-action-row">
+              <button type="button" class="ai-entry-btn" id="ai-open-btn">AI 生成今日计划</button>
+              <button type="button" class="manual-btn" id="manual-arrange-btn">自己选动作</button>
+            </div>
           </div>
         </div>
 
@@ -95,17 +126,65 @@
     </div>
 
     <div class="right-panel">
-      <div class="panel-header">
-        <span>历史记录</span>
-        <div class="panel-header-right">
-          <span class="record-count" id="record-count"></span>
-          <button id="export-btn" class="data-btn" title="导出数据">导出</button>
-          <label class="data-btn" title="导入数据">导入
-            <input type="file" id="import-file" accept=".json" style="display:none;">
-          </label>
+      <div class="analytics-panel">
+        <div class="analytics-header">
+          <div>
+            <span class="analytics-kicker">进度追踪</span>
+            <h2 class="analytics-title">最近训练趋势</h2>
+          </div>
+          <select id="progress-exercise-select" class="analytics-select"></select>
+        </div>
+
+        <div class="analytics-metrics" id="progress-metrics">
+          <div class="analytics-metric">
+            <span class="analytics-metric-num" id="progress-latest-weight">-</span>
+            <span class="analytics-metric-label">最近工作重量</span>
+          </div>
+          <div class="analytics-metric">
+            <span class="analytics-metric-num" id="progress-best-weight">-</span>
+            <span class="analytics-metric-label">历史最高重量</span>
+          </div>
+          <div class="analytics-metric">
+            <span class="analytics-metric-num" id="progress-latest-volume">-</span>
+            <span class="analytics-metric-label">最近训练量</span>
+          </div>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <div class="analytics-card-title">动作重量趋势</div>
+            <div id="progress-weight-chart" class="trend-chart"></div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-card-title">动作训练量趋势</div>
+            <div id="progress-volume-chart" class="trend-chart"></div>
+          </div>
+        </div>
+
+        <div class="analytics-card">
+          <div class="analytics-card-title">近 4 周部位频率</div>
+          <div id="progress-frequency-list" class="frequency-list"></div>
         </div>
       </div>
-      <ul id="list"></ul>
+
+      <div class="history-panel">
+        <div class="panel-header">
+          <div>
+            <span class="history-kicker">训练记录</span>
+            <div class="history-title-row">
+              <span>历史记录</span>
+              <span class="record-count" id="record-count"></span>
+            </div>
+          </div>
+          <div class="panel-header-right">
+            <button id="export-btn" class="data-btn" title="导出数据">导出</button>
+            <label class="data-btn" title="导入数据">导入
+              <input type="file" id="import-file" accept=".json" style="display:none;">
+            </label>
+          </div>
+        </div>
+        <ul id="list"></ul>
+      </div>
     </div>
   </div>
 
