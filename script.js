@@ -288,6 +288,9 @@ const voiceMuscleKeywords = [
 ];
 
 const voiceExerciseKeywordIndex = buildVoiceExerciseKeywordIndex();
+const DOUBAO_API_ENDPOINT = "https://ark.volces.com/api/v3/chat/completions";
+const DOUBAO_API_KEY = "YOUR_DOUBAO_API_KEY";
+const DOUBAO_MODEL_ID = "YOUR_DOUBAO_MODEL_ID";
 
 persistRecords();
 renderExercises();
@@ -1907,6 +1910,7 @@ function buildVoiceExercisePlan(name, muscle, overrides) {
   if (overrides.weight) personalized.weight = overrides.weight;
   if (overrides.rest) personalized.rest = overrides.rest;
   if (overrides.intensity) personalized.intensity = overrides.intensity;
+  if (overrides.progression) personalized.progression = String(overrides.progression).trim();
   return personalized;
 }
 
@@ -1978,6 +1982,7 @@ function buildVoiceResultMeta(plan) {
   const meta = [];
   meta.push("识别到 " + plan.exercises.length + " 个动作");
   meta.push("训练部位：" + plan.muscle);
+  if (plan.suggestions && plan.suggestions.length) meta.push("已生成 " + plan.suggestions.length + " 条建议");
   if (plan.source === "fallback") meta.push("未命中动作名，已回退到基础模板");
   return meta;
 }
@@ -2015,7 +2020,7 @@ function createVoiceExerciseRow(exercise, index) {
     this.value = appState.voice.plan.exercises[index].name;
   });
   note.className = "voice-ex-note";
-  note.textContent = exercise.intensity + " · 休息 " + exercise.rest + " 秒";
+  note.textContent = [exercise.intensity, "休息 " + exercise.rest + " 秒", exercise.progression].filter(Boolean).join(" · ");
 
   top.appendChild(nameInput);
   top.appendChild(note);
@@ -2086,8 +2091,156 @@ function renderVoicePlan(plan) {
   document.getElementById("voice-result").style.display = "block";
 }
 
-function parseVoicePlanInput() {
+function setVoicePlanLoading(isLoading) {
+  ["voice-start-btn", "voice-stop-btn", "voice-parse-btn", "voice-import-btn", "voice-reset-btn"].forEach(function (id) {
+    const button = document.getElementById(id);
+    if (!button) return;
+    button.disabled = isLoading;
+  });
+}
+
+function buildExerciseLibraryPrompt() {
+  return ["胸", "肩", "背", "臀腿"].map(function (muscle) {
+    const names = exerciseLibrary[muscle].map(function (exercise) {
+      return exercise.name;
+    }).join("、");
+    return muscle + "：" + names;
+  }).join("\n");
+}
+
+function extractJsonFromModelResponse(content) {
+  const raw = String(content || "").trim();
+  const fencedMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const jsonText = fencedMatch ? fencedMatch[1].trim() : raw;
+
+  try {
+    return JSON.parse(jsonText);
+  } catch (error) {
+    throw new Error("模型返回的不是有效 JSON");
+  }
+}
+
+function normalizeVoiceModelReps(value) {
+  if (value === undefined || value === null || value === "") return "";
+  if (Array.isArray(value) && value.length >= 2) {
+    return String(parseVoiceNumberToken(value[0])) + "-" + String(parseVoiceNumberToken(value[1]));
+  }
+
+  const textValue = String(value).trim();
+  if (!textValue) return "";
+  if (/^\d+\s*[-~到至]\s*\d+$/.test(textValue)) {
+    return textValue.replace(/[~到至]/g, "-").replace(/\s+/g, "");
+  }
+
+  const rangeMatch = textValue.match(/([零一二三四五六七八九十两\d]+)\s*[-~到至]\s*([零一二三四五六七八九十两\d]+)/);
+  if (rangeMatch) {
+    return String(parseVoiceNumberToken(rangeMatch[1])) + "-" + String(parseVoiceNumberToken(rangeMatch[2]));
+  }
+
+  return String(parseVoiceNumberToken(textValue) || textValue.replace(/[^\d.]/g, "")).trim();
+}
+
+function normalizeVoiceModelWeight(weight, unit) {
+  if (weight === undefined || weight === null || weight === "") return "";
+
+  const rawText = String(weight).trim();
+  const numeric = typeof weight === "number"
+    ? weight
+    : parseFloat(rawText.replace(/[^\d.]/g, ""));
+
+  if (!Number.isFinite(numeric)) return "";
+
+  const detectedUnit = String(unit || rawText).toLowerCase();
+  const inJin = /斤/.test(rawText) || /斤/.test(detectedUnit);
+  const normalized = inJin ? numeric / 2 : numeric;
+  return formatWeightValue(normalized);
+}
+
+function normalizeVoiceModelExercise(exercise, muscle) {
+  const rawName = normalizeExerciseName(exercise && exercise.name ? exercise.name : "");
+  if (!rawName || !findExerciseDefinition(rawName)) return null;
+
+  const overrides = {
+    sets: exercise && exercise.sets !== undefined && exercise.sets !== null && exercise.sets !== ""
+      ? String(parseInt(exercise.sets, 10) || parseVoiceNumberToken(exercise.sets))
+      : "",
+    reps: normalizeVoiceModelReps(exercise && exercise.reps),
+    weight: normalizeVoiceModelWeight(exercise && exercise.weight, exercise && exercise.weight_unit),
+    rest: exercise && exercise.rest !== undefined && exercise.rest !== null && exercise.rest !== ""
+      ? String(parseInt(exercise.rest, 10) || parseVoiceNumberToken(exercise.rest))
+      : "",
+    intensity: exercise && exercise.intensity ? String(exercise.intensity).trim() : "",
+    progression: exercise && (exercise.progression || exercise.suggestion || exercise.note)
+      ? String(exercise.progression || exercise.suggestion || exercise.note).trim()
+      : ""
+  };
+
+  return buildVoiceExercisePlan(rawName, muscle, overrides);
+}
+
+function normalizeVoiceModelSuggestions(payload) {
+  const raw = payload && Array.isArray(payload.suggestions)
+    ? payload.suggestions
+    : (payload && Array.isArray(payload.advice) ? payload.advice : []);
+
+  return raw.map(function (item) {
+    return String(item || "").trim();
+  }).filter(Boolean).slice(0, 3);
+}
+
+function buildRecentWorkoutPrompt(limit) {
+  const records = appState.data.records.slice().sort(function (a, b) {
+    return parseDateString(b.date).getTime() - parseDateString(a.date).getTime();
+  }).slice(0, limit || 4);
+
+  if (!records.length) return "暂无历史训练记录。";
+
+  return records.map(function (record) {
+    const exercises = getRecordExercises(record).map(function (exercise) {
+      const parts = [exercise.name];
+      if (exercise.weight) parts.push(exercise.weight + "kg");
+      if (exercise.sets) parts.push(exercise.sets + "组");
+      if (exercise.reps) parts.push(exercise.reps + "次");
+      return parts.join(" ");
+    }).join("；");
+    return record.date + " " + record.muscle + "：" + exercises;
+  }).join("\n");
+}
+
+function normalizeVoiceModelPlan(payload, transcript) {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("模型没有返回可用的训练计划");
+  }
+
+  const fallbackMuscle = getCurrentMuscle();
+  const suggestedMuscle = payload.muscle || payload.target_muscle || payload.body_part || fallbackMuscle;
+  const muscle = normalizeMuscle(suggestedMuscle);
+  const rawExercises = Array.isArray(payload.exercises) ? payload.exercises : [];
+  const exercises = rawExercises.map(function (exercise) {
+    return normalizeVoiceModelExercise(exercise, muscle);
+  }).filter(Boolean);
+  const suggestions = normalizeVoiceModelSuggestions(payload);
+
+  if (!exercises.length) {
+    throw new Error("没有识别到可导入的动作，请换一种说法再试");
+  }
+
+  return {
+    muscle: muscle,
+    source: "doubao",
+    transcript: transcript,
+    matchedCount: exercises.length,
+    suggestions: suggestions,
+    exercises: exercises
+  };
+}
+
+async function parseVoicePlanInput() {
   const input = document.getElementById("voice-input").value.trim();
+  const currentMuscle = getCurrentMuscle();
+  const recentWorkouts = buildRecentWorkoutPrompt(4);
+  let response;
+  let payload;
   let plan;
 
   if (!input) {
@@ -2095,9 +2248,75 @@ function parseVoicePlanInput() {
     return;
   }
 
-  plan = buildVoicePlanFromText(input);
-  renderVoicePlan(plan);
-  setVoiceStatus(plan.source === "fallback" ? "没有识别到具体动作，已按当前部位生成基础计划。" : "已识别训练计划，导入前可以微调每个动作。");
+  if (!DOUBAO_API_KEY || DOUBAO_API_KEY === "YOUR_DOUBAO_API_KEY" || !DOUBAO_MODEL_ID || DOUBAO_MODEL_ID === "YOUR_DOUBAO_MODEL_ID") {
+    setVoiceStatus("请先在脚本里填入豆包 API Key 和 Model ID");
+    showToast("豆包配置未完成");
+    return;
+  }
+
+  setVoicePlanLoading(true);
+  setVoiceStatus("正在调用豆包解析训练计划...");
+
+  try {
+    response = await fetch(DOUBAO_API_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + DOUBAO_API_KEY
+      },
+      body: JSON.stringify({
+        model: DOUBAO_MODEL_ID,
+        temperature: 0.1,
+        messages: [
+          {
+            role: "system",
+            content: [
+              "你是健身训练助手，只负责把中文自然语言训练描述解析为训练计划 JSON。",
+              "用户输入可能包含口语、省略、错别字、斤/公斤混用、复杂句式，你要做稳健归一化。",
+              "只返回 JSON，不要返回解释、Markdown、代码块。",
+              "输出格式必须是：{\"muscle\":\"背\",\"suggestions\":[\"宽握下拉可以先保持当前重量\"],\"exercises\":[{\"name\":\"宽握下拉\",\"sets\":4,\"reps\":\"8-10\",\"weight\":65,\"weight_unit\":\"kg\",\"rest\":90,\"intensity\":\"RPE 8\",\"progression\":\"如果做满，下次+2.5kg\"}]}。",
+              "动作名称必须严格从给定动作库里选择最接近的标准名称，不要自造名称。",
+              "重量统一换算为 kg；如果用户说斤，自动除以 2。",
+              "如果用户没说部位，就根据动作推断 muscle。",
+              "如果用户没说 rest 或 intensity，可以合理补全常见值。",
+              "可以结合提供的历史训练记录，给出最多 3 条简短建议。"
+            ].join("\n")
+          },
+          {
+            role: "user",
+            content: [
+              "当前选中的训练部位：" + currentMuscle,
+              "动作库：",
+              buildExerciseLibraryPrompt(),
+              "最近训练记录：",
+              recentWorkouts,
+              "用户原始输入：" + input
+            ].join("\n")
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("豆包解析失败（" + response.status + "）");
+    }
+
+    payload = await response.json();
+    if (!payload || !payload.choices || !payload.choices.length || !payload.choices[0].message) {
+      throw new Error("豆包没有返回可用结果");
+    }
+
+    plan = normalizeVoiceModelPlan(extractJsonFromModelResponse(payload.choices[0].message.content), input);
+    renderVoicePlan(plan);
+    setVoiceStatus("已用豆包解析训练计划，导入前可以微调每个动作。");
+  } catch (error) {
+    appState.voice.plan = null;
+    resetVoiceResultView();
+    setVoiceStatus(error && error.message ? error.message : "解析失败，请换一种说法再试");
+    showToast(error && error.message ? error.message : "解析失败，请换一种说法再试");
+  } finally {
+    setVoicePlanLoading(false);
+  }
 }
 
 function showToast(message) {
