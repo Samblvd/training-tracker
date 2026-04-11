@@ -192,10 +192,38 @@ var muscleTagClass = {
 
 var editingIndex = -1;
 var toastTimer = null;
-var aiSelection = { muscle: "胸", goal: "增肌", duration: "45", equipment: "健身房" };
-var aiGeneratedPlan = null;
+var voicePlan = null;
+var voiceRecognition = null;
+var voiceIsListening = false;
 var editorPlanMeta = {};
 var records = sanitizeRecords(JSON.parse(localStorage.getItem("records") || "[]"));
+
+var voiceExerciseAliases = {
+  "绳索引拉": "宽握下拉",
+  "引拉": "宽握下拉",
+  "绳索下拉": "宽握下拉",
+  "下拉": "宽握下拉",
+  "卧推": "平板杠铃卧推",
+  "上斜卧推": "上斜杠铃卧推",
+  "推肩": "哑铃推肩",
+  "推举": "杠铃推举",
+  "深蹲": "杠铃深蹲",
+  "硬拉": "罗马尼亚硬拉",
+  "划船": "坐姿划船",
+  "腿弯举": "坐姿腿弯举",
+  "腿屈伸": "坐姿腿屈伸",
+  "分腿蹲": "保加利亚分腿蹲",
+  "夹胸": "绳索夹胸"
+};
+
+var voiceMuscleKeywords = [
+  { muscle: "胸", keywords: ["胸部", "胸肌", "练胸", "胸"] },
+  { muscle: "肩", keywords: ["肩部", "肩膀", "练肩", "肩"] },
+  { muscle: "背", keywords: ["背部", "背阔", "练背", "背"] },
+  { muscle: "臀腿", keywords: ["臀腿", "腿部", "下肢", "练腿", "臀", "腿"] }
+];
+
+var voiceExerciseKeywordIndex = buildVoiceExerciseKeywordIndex();
 
 var wm = {
   exercises: [],
@@ -206,7 +234,9 @@ var wm = {
   restTotal: 90,
   sessionLog: [],
   exDoneTimer: null,
-  summary: null
+  summary: null,
+  startedAt: "",
+  finishedAt: ""
 };
 
 persistRecords();
@@ -226,13 +256,6 @@ document.getElementById("muscle-pills").addEventListener("click", function (e) {
 document.getElementById("manual-arrange-btn").onclick = function () {
   if (isExerciseSectionOpen()) hideExerciseSection();
   else showExerciseSection();
-};
-
-document.getElementById("load-last-btn").onclick = function () {
-  var last = getLastRecord(getCurrentMuscle());
-  if (!last || !last.exercises || !last.exercises.length) return;
-  applyPlanToEditor(last.muscle, last.exercises, true);
-  showToast("已带入上次训练");
 };
 
 document.getElementById("start-workout-btn").onclick = function () {
@@ -270,47 +293,40 @@ document.getElementById("draft-discard-btn").onclick = function () {
   clearDraft();
 };
 
-document.getElementById("ai-open-btn").onclick = function () {
-  aiSelection.muscle = getCurrentMuscle();
-  aiGeneratedPlan = null;
-  syncAiSelectionUI();
-  document.getElementById("ai-result").style.display = "none";
-  document.getElementById("ai-modal").style.display = "flex";
+document.getElementById("voice-open-btn").onclick = openVoiceModal;
+document.getElementById("voice-modal-close").onclick = closeVoiceModal;
+document.getElementById("voice-modal").onclick = function (e) {
+  if (e.target === this) closeVoiceModal();
+};
+document.getElementById("voice-start-btn").onclick = function () {
+  startVoiceRecognition();
+};
+document.getElementById("voice-stop-btn").onclick = function () {
+  stopVoiceRecognition();
+};
+document.getElementById("voice-parse-btn").onclick = function () {
+  parseVoicePlanInput();
+};
+document.getElementById("voice-import-btn").onclick = function () {
+  if (!voicePlan || !voicePlan.exercises || !voicePlan.exercises.length) {
+    showToast("请先识别训练计划");
+    return;
+  }
+  applyPlanToEditor(voicePlan.muscle, voicePlan.exercises, true);
+  closeVoiceModal();
+  showToast("训练计划已导入");
+};
+document.getElementById("voice-reset-btn").onclick = function () {
+  voicePlan = null;
+  document.getElementById("voice-result").style.display = "none";
+  document.getElementById("voice-result-title").textContent = "";
+  document.getElementById("voice-result-list").innerHTML = "";
+  setVoiceStatus(getVoiceSupportMessage());
 };
 
-document.getElementById("ai-modal-close").onclick = closeAiModal;
-document.getElementById("ai-modal").onclick = function (e) {
-  if (e.target === this) closeAiModal();
-};
-
-["ai-muscle", "ai-goal", "ai-duration", "ai-equipment"].forEach(function (groupId) {
-  document.getElementById(groupId).addEventListener("click", function (e) {
-    var btn = e.target.closest(".opt-btn");
-    var keyMap = {
-      "ai-muscle": "muscle",
-      "ai-goal": "goal",
-      "ai-duration": "duration",
-      "ai-equipment": "equipment"
-    };
-    if (!btn) return;
-    this.querySelectorAll(".opt-btn").forEach(function (item) {
-      item.classList.remove("active");
-    });
-    btn.classList.add("active");
-    aiSelection[keyMap[groupId]] = btn.dataset.value;
-    aiGeneratedPlan = null;
-  });
+document.getElementById("progress-exercise-select").addEventListener("change", function () {
+  renderProgressPanel();
 });
-
-document.getElementById("ai-generate-btn").onclick = renderAiResult;
-document.getElementById("ai-regen-btn").onclick = renderAiResult;
-document.getElementById("ai-import-btn").onclick = function () {
-  var muscle = normalizeMuscle(aiSelection.muscle);
-  var plan = aiGeneratedPlan || getAiPlan(muscle, aiSelection.goal, aiSelection.duration);
-  applyPlanToEditor(muscle, plan.exercises, true);
-  closeAiModal();
-  showToast("AI 计划已导入");
-};
 
 document.getElementById("export-btn").onclick = function () {
   var data = {
@@ -437,7 +453,8 @@ document.getElementById("wm-finish-btn").onclick = function () {
   clearInterval(wm.restTimer);
   clearTimeout(wm.exDoneTimer);
   wm.restEndTime = 0;
-  wmAutoSave();
+  wm.finishedAt = new Date().toISOString();
+  wmAutoSave({ isFinal: true });
   clearDraft();
   document.getElementById("workout-overlay").style.display = "none";
   showToast("训练已记录");
@@ -492,14 +509,28 @@ function normalizeRecord(record) {
     ? record.date
     : getTodayStr();
   var muscle = normalizeMuscle(record.muscle);
+  var plannedExercises = Array.isArray(record.plannedExercises)
+    ? record.plannedExercises.map(normalizeExercise).filter(Boolean)
+    : [];
+  var sessionLog = Array.isArray(record.sessionLog)
+    ? record.sessionLog.map(normalizeSessionLogItem).filter(Boolean)
+    : [];
   var exercises = Array.isArray(record.exercises)
     ? record.exercises.map(normalizeExercise).filter(Boolean)
-    : [];
+    : buildExercisesFromSessionLog(sessionLog);
+  var totalVolume = record.totalVolume === undefined || record.totalVolume === null || record.totalVolume === ""
+    ? getSessionLogVolume(sessionLog)
+    : Number(record.totalVolume) || 0;
 
   return {
     date: date,
     muscle: muscle,
     exercises: exercises,
+    plannedExercises: plannedExercises,
+    sessionLog: sessionLog,
+    totalVolume: totalVolume,
+    startedAt: typeof record.startedAt === "string" ? record.startedAt : "",
+    finishedAt: typeof record.finishedAt === "string" ? record.finishedAt : "",
     note: record.note || "",
     content: record.content || buildContent(muscle, exercises),
     _wmSession: !!record._wmSession
@@ -519,12 +550,71 @@ function normalizeExercise(exercise) {
   };
 }
 
+function normalizeCompletedSet(set) {
+  if (!set || typeof set !== "object") return null;
+  return {
+    setNumber: parseInt(set.setNumber, 10) || 1,
+    weight: set.weight === undefined || set.weight === null ? "" : String(set.weight),
+    reps: set.reps === undefined || set.reps === null ? "" : String(set.reps),
+    restSeconds: parseInt(set.restSeconds, 10) || 0
+  };
+}
+
+function normalizeSessionLogItem(item) {
+  if (!item || !item.name) return null;
+  return {
+    name: normalizeExerciseName(item.name),
+    targetWeight: item.targetWeight === undefined || item.targetWeight === null ? "" : String(item.targetWeight),
+    targetSets: item.targetSets === undefined || item.targetSets === null ? "" : String(item.targetSets),
+    targetReps: item.targetReps === undefined || item.targetReps === null ? "" : String(item.targetReps),
+    targetRest: item.targetRest === undefined || item.targetRest === null ? "" : String(item.targetRest),
+    intensity: item.intensity || "",
+    progression: item.progression || "",
+    completedSets: Array.isArray(item.completedSets)
+      ? item.completedSets.map(normalizeCompletedSet).filter(Boolean)
+      : []
+  };
+}
+
+function buildExercisesFromSessionLog(sessionLog) {
+  return (sessionLog || []).filter(function (item) {
+    return item.completedSets && item.completedSets.length;
+  }).map(function (item) {
+    var lastSet = item.completedSets[item.completedSets.length - 1];
+    return normalizeExercise({
+      name: item.name,
+      weight: lastSet.weight,
+      sets: String(item.completedSets.length),
+      reps: lastSet.reps,
+      rest: item.targetRest,
+      intensity: item.intensity,
+      progression: item.progression
+    });
+  }).filter(Boolean);
+}
+
+function getSessionLogVolume(sessionLog) {
+  return (sessionLog || []).reduce(function (sum, item) {
+    return sum + (item.completedSets || []).reduce(function (setSum, set) {
+      var weight = parseWeightNumber(set.weight);
+      var reps = parseInt(set.reps, 10) || 0;
+      if (weight === null || !reps) return setSum;
+      return setSum + weight * reps;
+    }, 0);
+  }, 0);
+}
+
 function persistRecords() {
   localStorage.setItem("records", JSON.stringify(records));
 }
 
+function getRecordExercises(record) {
+  if (record && record.exercises && record.exercises.length) return record.exercises;
+  return buildExercisesFromSessionLog(record && record.sessionLog ? record.sessionLog : []);
+}
+
 function getRecordKey(record) {
-  var exerciseNames = (record.exercises || []).map(function (exercise) {
+  var exerciseNames = getRecordExercises(record).map(function (exercise) {
     return exercise.name;
   }).join("/");
   return [record.date, record.muscle, exerciseNames].join("|");
@@ -602,13 +692,15 @@ function hideExerciseSection() {
 }
 
 function updateLoadLastBtn() {
+  var btn = document.getElementById("load-last-btn");
   var last = getLastRecord(getCurrentMuscle());
-  document.getElementById("load-last-btn").style.display = last ? "inline-flex" : "none";
+  if (!btn) return;
+  btn.style.display = last ? "inline-flex" : "none";
 }
 
 function getLastRecord(muscle) {
   for (var i = records.length - 1; i >= 0; i--) {
-    if (records[i].muscle === muscle && records[i].exercises && records[i].exercises.length) {
+    if (records[i].muscle === muscle && getRecordExercises(records[i]).length) {
       return records[i];
     }
   }
@@ -778,6 +870,7 @@ function rebuildList() {
 }
 
 function addToList(record, index) {
+  var recordExercises = getRecordExercises(record);
   var li = document.createElement("li");
   li.className = "record-card";
   li.setAttribute("data-index", index);
@@ -799,7 +892,7 @@ function addToList(record, index) {
   var buttonGroup = document.createElement("div");
   buttonGroup.className = "btn-group";
 
-  if (record.exercises && record.exercises.length) {
+  if (recordExercises.length) {
     var compareBtn = document.createElement("button");
     compareBtn.className = "cmp-btn";
     compareBtn.textContent = "对比上次";
@@ -834,8 +927,8 @@ function addToList(record, index) {
   var body = document.createElement("div");
   body.className = "card-body";
 
-  if (record.exercises && record.exercises.length) {
-    record.exercises.forEach(function (exercise) {
+  if (recordExercises.length) {
+    recordExercises.forEach(function (exercise) {
       var row = document.createElement("div");
       row.className = "card-ex-row";
 
@@ -872,7 +965,7 @@ function loadRecordToComposer(index) {
   editingIndex = index;
   setMuscle(record.muscle);
   openBackfill(record.date);
-  applyPlanToEditor(record.muscle, record.exercises || [], true);
+  applyPlanToEditor(record.muscle, record.plannedExercises && record.plannedExercises.length ? record.plannedExercises : getRecordExercises(record), true);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -913,6 +1006,199 @@ function updateStats() {
   document.getElementById("count-week").textContent = weekCount;
   document.getElementById("count-month").textContent = monthCount;
   document.getElementById("record-count").textContent = records.length + " 条";
+  renderProgressPanel();
+}
+
+function formatShortDate(dateStr) {
+  if (!dateStr) return "";
+  return dateStr.slice(5).replace("-", "/");
+}
+
+function getExerciseSessionData(record, exerciseName) {
+  var normalizedName = normalizeExerciseName(exerciseName);
+  var sessionLog = record.sessionLog || [];
+
+  for (var i = 0; i < sessionLog.length; i++) {
+    var item = sessionLog[i];
+    if (normalizeExerciseName(item.name) !== normalizedName) continue;
+    if (!item.completedSets || !item.completedSets.length) return null;
+
+    return {
+      date: record.date,
+      weight: item.completedSets.reduce(function (maxWeight, set) {
+        var weight = parseWeightNumber(set.weight);
+        if (weight === null) return maxWeight;
+        return Math.max(maxWeight, weight);
+      }, 0),
+      volume: item.completedSets.reduce(function (sum, set) {
+        var weight = parseWeightNumber(set.weight);
+        var reps = parseInt(set.reps, 10) || 0;
+        if (weight === null || !reps) return sum;
+        return sum + weight * reps;
+      }, 0),
+      sets: item.completedSets.length
+    };
+  }
+
+  return null;
+}
+
+function getExerciseSummaryData(record, exerciseName) {
+  var normalizedName = normalizeExerciseName(exerciseName);
+  var exercises = getRecordExercises(record);
+
+  for (var i = 0; i < exercises.length; i++) {
+    var exercise = exercises[i];
+    if (normalizeExerciseName(exercise.name) !== normalizedName) continue;
+
+    var weight = parseWeightNumber(exercise.weight);
+    var sets = parseInt(exercise.sets, 10) || 0;
+    var reps = parseInt(getRepInputValue(exercise.reps), 10) || 0;
+
+    return {
+      date: record.date,
+      weight: weight === null ? 0 : weight,
+      volume: weight === null || !sets || !reps ? 0 : weight * sets * reps,
+      sets: sets
+    };
+  }
+
+  return null;
+}
+
+function getExerciseTrendData(exerciseName, limit) {
+  var data = [];
+  var sorted = records.slice().sort(function (a, b) {
+    return parseDateString(a.date).getTime() - parseDateString(b.date).getTime();
+  });
+
+  sorted.forEach(function (record) {
+    var point = getExerciseSessionData(record, exerciseName) || getExerciseSummaryData(record, exerciseName);
+    if (point) data.push(point);
+  });
+
+  return limit ? data.slice(-limit) : data;
+}
+
+function getTrackedExerciseNames() {
+  var seen = {};
+  var names = [];
+
+  for (var i = records.length - 1; i >= 0; i--) {
+    getRecordExercises(records[i]).forEach(function (exercise) {
+      var name = normalizeExerciseName(exercise.name);
+      if (seen[name]) return;
+      seen[name] = true;
+      names.push(name);
+    });
+  }
+
+  return names;
+}
+
+function renderTrendChart(containerId, data, metric, variant) {
+  var container = document.getElementById(containerId);
+  var max = data.reduce(function (currentMax, item) {
+    return Math.max(currentMax, item[metric] || 0);
+  }, 0);
+
+  if (!data.length) {
+    container.innerHTML = '<div class="trend-empty">还没有足够的训练数据</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="trend-bars">' + data.map(function (item) {
+    var height = max ? Math.max(14, Math.round((item[metric] || 0) / max * 120)) : 14;
+    var valueText = metric === "weight"
+      ? formatWeightValue(item.weight) + "kg"
+      : formatWeightValue(item.volume) + "kg";
+
+    return '' +
+      '<div class="trend-col">' +
+        '<div class="trend-value">' + valueText + '</div>' +
+        '<div class="trend-bar-wrap"><div class="trend-bar ' + variant + '" style="height:' + height + 'px"></div></div>' +
+        '<div class="trend-label">' + formatShortDate(item.date) + '</div>' +
+      '</div>';
+  }).join("") + '</div>';
+}
+
+function getMuscleFrequencyData(days) {
+  var cutoff = parseDateString(getTodayStr());
+  var counts = { 胸: 0, 肩: 0, 背: 0, 臀腿: 0 };
+  cutoff.setDate(cutoff.getDate() - (days - 1));
+
+  records.forEach(function (record) {
+    if (parseDateString(record.date) < cutoff) return;
+    if (!getRecordExercises(record).length) return;
+    counts[normalizeMuscle(record.muscle)]++;
+  });
+
+  return ["胸", "肩", "背", "臀腿"].map(function (muscle) {
+    return { muscle: muscle, count: counts[muscle] || 0 };
+  });
+}
+
+function renderFrequencyList() {
+  var list = document.getElementById("progress-frequency-list");
+  var data = getMuscleFrequencyData(28);
+  var max = data.reduce(function (currentMax, item) {
+    return Math.max(currentMax, item.count);
+  }, 0);
+
+  list.innerHTML = data.map(function (item) {
+    var width = max ? Math.max(8, Math.round(item.count / max * 100)) : 0;
+    return '' +
+      '<div class="frequency-row">' +
+        '<span class="frequency-name">' + item.muscle + '</span>' +
+        '<div class="frequency-track"><div class="frequency-fill" style="width:' + width + '%"></div></div>' +
+        '<span class="frequency-count">' + item.count + ' 次</span>' +
+      '</div>';
+  }).join("");
+}
+
+function renderProgressPanel() {
+  var select = document.getElementById("progress-exercise-select");
+  var names = getTrackedExerciseNames();
+  var currentValue;
+  var data;
+  var latest;
+  var bestWeight;
+
+  if (!select) return;
+  currentValue = select.value;
+
+  if (!names.length) {
+    select.innerHTML = '<option value="">暂无动作数据</option>';
+    document.getElementById("progress-latest-weight").textContent = "-";
+    document.getElementById("progress-best-weight").textContent = "-";
+    document.getElementById("progress-latest-volume").textContent = "-";
+    renderTrendChart("progress-weight-chart", [], "weight", "");
+    renderTrendChart("progress-volume-chart", [], "volume", "volume");
+    renderFrequencyList();
+    return;
+  }
+
+  select.innerHTML = names.map(function (name) {
+    return '<option value="' + name + '">' + name + '</option>';
+  }).join("");
+
+  select.value = names.indexOf(currentValue) >= 0 ? currentValue : names[0];
+  data = getExerciseTrendData(select.value, 8);
+  latest = data.length ? data[data.length - 1] : null;
+  bestWeight = data.reduce(function (maxWeight, item) {
+    return Math.max(maxWeight, item.weight || 0);
+  }, 0);
+
+  document.getElementById("progress-latest-weight").textContent =
+    latest ? formatWeightValue(latest.weight) + "kg" : "-";
+  document.getElementById("progress-best-weight").textContent =
+    data.length ? formatWeightValue(bestWeight) + "kg" : "-";
+  document.getElementById("progress-latest-volume").textContent =
+    latest ? formatWeightValue(latest.volume) + "kg" : "-";
+
+  renderTrendChart("progress-weight-chart", data, "weight", "");
+  renderTrendChart("progress-volume-chart", data, "volume", "volume");
+  renderFrequencyList();
 }
 
 function findExerciseDefinition(name) {
@@ -983,7 +1269,7 @@ function getLastWorkoutByMuscle(muscle, options) {
 
   for (var i = records.length - 1; i >= 0; i--) {
     var record = records[i];
-    if (record.muscle !== targetMuscle || !record.exercises || !record.exercises.length) continue;
+    if (record.muscle !== targetMuscle || !getRecordExercises(record).length) continue;
     if (shouldExcludeCurrentSession && record._wmSession && record.date === today && record.muscle === targetMuscle) continue;
     return record;
   }
@@ -1000,7 +1286,7 @@ function getExerciseHistory(exerciseName, limit, options) {
 
   for (var i = records.length - 1; i >= 0; i--) {
     var record = records[i];
-    var exercises = record.exercises || [];
+    var exercises = getRecordExercises(record);
 
     if (targetMuscle && record.muscle !== targetMuscle) continue;
     if (shouldExcludeCurrentSession && record._wmSession && record.date === today && (!targetMuscle || record.muscle === targetMuscle)) continue;
@@ -1183,40 +1469,343 @@ function buildAiPlan(muscle, goal, duration) {
   };
 }
 
-function closeAiModal() {
-  document.getElementById("ai-modal").style.display = "none";
-}
+function buildVoiceExerciseKeywordIndex() {
+  var keywordMap = {};
 
-function syncAiSelectionUI() {
-  [
-    { selector: "#ai-muscle .opt-btn", value: aiSelection.muscle },
-    { selector: "#ai-goal .opt-btn", value: aiSelection.goal },
-    { selector: "#ai-duration .opt-btn", value: aiSelection.duration },
-    { selector: "#ai-equipment .opt-btn", value: aiSelection.equipment }
-  ].forEach(function (group) {
-    document.querySelectorAll(group.selector).forEach(function (btn) {
-      btn.classList.toggle("active", btn.dataset.value === group.value);
+  Object.keys(exerciseLibrary).forEach(function (muscle) {
+    exerciseLibrary[muscle].forEach(function (exercise) {
+      keywordMap[exercise.name] = normalizeExerciseName(exercise.name);
     });
+  });
+
+  Object.keys(EXERCISE_NAME_ALIASES).forEach(function (alias) {
+    keywordMap[alias] = normalizeExerciseName(EXERCISE_NAME_ALIASES[alias]);
+  });
+
+  Object.keys(voiceExerciseAliases).forEach(function (alias) {
+    keywordMap[alias] = normalizeExerciseName(voiceExerciseAliases[alias]);
+  });
+
+  return Object.keys(keywordMap).sort(function (a, b) {
+    return b.length - a.length;
+  }).map(function (keyword) {
+    return {
+      keyword: keyword,
+      name: keywordMap[keyword]
+    };
   });
 }
 
-function getAiPlan(muscle, goal, duration) {
-  return buildAiPlan(muscle, goal, duration || aiSelection.duration);
+function getVoiceSupportMessage() {
+  return supportsVoiceRecognition()
+    ? "支持浏览器原生语音识别；也可以直接在下方输入文字。"
+    : "当前浏览器不支持原生语音识别，可以直接在下方输入训练计划。";
 }
 
-function renderAiResult() {
-  var muscle = normalizeMuscle(aiSelection.muscle);
-  var plan = getAiPlan(muscle, aiSelection.goal, aiSelection.duration);
-  var title = document.getElementById("ai-result-title");
-  var list = document.getElementById("ai-result-list");
+function supportsVoiceRecognition() {
+  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+}
 
-  aiGeneratedPlan = plan;
-  title.textContent = [
-    plan.muscle + " · " + plan.goal,
-    plan.duration + " 分钟",
-    aiSelection.equipment,
-    plan.lastWorkoutDate ? "参考上次：" + plan.lastWorkoutDate : "首次使用该部位模板"
-  ].join(" · ");
+function setVoiceStatus(message) {
+  document.getElementById("voice-status").textContent = message;
+}
+
+function openVoiceModal() {
+  voicePlan = null;
+  document.getElementById("voice-result").style.display = "none";
+  document.getElementById("voice-result-title").textContent = "";
+  document.getElementById("voice-result-list").innerHTML = "";
+  setVoiceStatus(getVoiceSupportMessage());
+  document.getElementById("voice-modal").style.display = "flex";
+}
+
+function closeVoiceModal() {
+  stopVoiceRecognition();
+  document.getElementById("voice-modal").style.display = "none";
+}
+
+function ensureVoiceRecognition() {
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Recognition) return null;
+  if (voiceRecognition) return voiceRecognition;
+
+  voiceRecognition = new Recognition();
+  voiceRecognition.lang = "zh-CN";
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = true;
+
+  voiceRecognition.onstart = function () {
+    voiceIsListening = true;
+    setVoiceStatus("正在听写，请继续说完整的训练计划。");
+  };
+
+  voiceRecognition.onresult = function (event) {
+    var finalText = "";
+    var interimText = "";
+    var input = document.getElementById("voice-input");
+
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+      else interimText += event.results[i][0].transcript;
+    }
+
+    if (finalText) {
+      input.value = (input.value + " " + finalText).replace(/\s+/g, " ").trim();
+      setVoiceStatus("已转成文字，可以继续说，也可以直接识别训练计划。");
+    } else if (interimText) {
+      setVoiceStatus("正在识别：" + interimText);
+    }
+  };
+
+  voiceRecognition.onerror = function (event) {
+    voiceIsListening = false;
+    setVoiceStatus("语音识别失败：" + (event.error || "请改用手动输入"));
+  };
+
+  voiceRecognition.onend = function () {
+    voiceIsListening = false;
+    if (document.getElementById("voice-modal").style.display === "flex") {
+      setVoiceStatus(document.getElementById("voice-input").value.trim() ? "听写结束，可以识别训练计划了。" : getVoiceSupportMessage());
+    }
+  };
+
+  return voiceRecognition;
+}
+
+function startVoiceRecognition() {
+  var recognition = ensureVoiceRecognition();
+  if (!recognition) {
+    showToast("当前浏览器不支持语音识别");
+    setVoiceStatus(getVoiceSupportMessage());
+    return;
+  }
+  if (voiceIsListening) return;
+  try {
+    recognition.start();
+  } catch (err) {
+    setVoiceStatus("请稍等一下，再次点击开始听写。");
+  }
+}
+
+function stopVoiceRecognition() {
+  if (!voiceRecognition || !voiceIsListening) return;
+  voiceRecognition.stop();
+}
+
+function parseVoiceNumberToken(token) {
+  var digitMap = { "零": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9 };
+  var parts;
+  var left;
+  var right;
+
+  if (!token) return 0;
+  token = String(token).replace(/两/g, "二").trim();
+  if (!token) return 0;
+  if (/^\d+(?:\.\d+)?$/.test(token)) return Number(token);
+  if (token === "十") return 10;
+  if (token.indexOf("十") > -1) {
+    parts = token.split("十");
+    left = parts[0] ? (digitMap[parts[0]] || 0) : 1;
+    right = parts[1] ? (digitMap[parts[1]] || 0) : 0;
+    return left * 10 + right;
+  }
+  return digitMap[token] || 0;
+}
+
+function getVoiceMuscleFromExercise(name) {
+  var exercise = findExerciseDefinition(name);
+  if (!exercise) return "";
+  if (exercise.muscle_primary === "肩后束") return "肩";
+  if (exercise.muscle_primary === "二头") return "背";
+  if (exercise.muscle_primary === "三头") return "胸";
+  if (["股四头", "腿后侧", "臀", "小腿"].indexOf(exercise.muscle_primary) > -1) return "臀腿";
+  return normalizeMuscle(exercise.muscle_primary);
+}
+
+function parseVoiceMuscle(text) {
+  for (var i = 0; i < voiceMuscleKeywords.length; i++) {
+    for (var j = 0; j < voiceMuscleKeywords[i].keywords.length; j++) {
+      if (text.indexOf(voiceMuscleKeywords[i].keywords[j]) > -1) return voiceMuscleKeywords[i].muscle;
+    }
+  }
+  return "";
+}
+
+function getLastWorkoutExerciseMap(muscle) {
+  var lastWorkout = getLastWorkoutByMuscle(muscle);
+  var map = {};
+
+  if (!lastWorkout || !lastWorkout.exercises) return map;
+  lastWorkout.exercises.forEach(function (exercise) {
+    map[normalizeExerciseName(exercise.name)] = exercise;
+  });
+  return map;
+}
+
+function getVoiceDefaultRepRange(name) {
+  var exercise = findExerciseDefinition(name);
+  if (!exercise) return "8-12";
+  if (exercise.type === "复合") return "6-10";
+  return "10-15";
+}
+
+function getVoiceDefaultSets(name) {
+  var exercise = findExerciseDefinition(name);
+  return exercise && exercise.type === "复合" ? "4" : "3";
+}
+
+function getVoiceDefaultWeight(name) {
+  var exercise = findExerciseDefinition(name);
+  if (!exercise) return "";
+  if (exercise.equipment === "徒手") return "0";
+  if (exercise.equipment === "杠铃") return exercise.type === "复合" ? "40" : "20";
+  if (exercise.equipment === "哑铃") return exercise.type === "复合" ? "16" : "8";
+  if (exercise.equipment === "器械") return exercise.type === "复合" ? "40" : "20";
+  if (exercise.equipment === "绳索") return "15";
+  return "";
+}
+
+function getVoiceTemplateForExercise(name, muscle) {
+  var normalizedName = normalizeExerciseName(name);
+  var plan = defaultPlans[muscle] || [];
+  var last = getLastExerciseData(normalizedName, { muscle: muscle });
+
+  for (var i = 0; i < plan.length; i++) {
+    if (normalizeExerciseName(plan[i].name) === normalizedName) return normalizeExercise(plan[i]);
+  }
+
+  if (last) {
+    return normalizeExercise({
+      name: normalizedName,
+      weight: last.weight,
+      sets: last.sets,
+      reps: last.reps
+    });
+  }
+
+  return normalizeExercise({
+    name: normalizedName,
+    weight: getVoiceDefaultWeight(normalizedName),
+    sets: getVoiceDefaultSets(normalizedName),
+    reps: getVoiceDefaultRepRange(normalizedName)
+  });
+}
+
+function findVoiceExerciseMatches(text) {
+  var rawMatches = [];
+  var pickedRanges = [];
+  var pickedNames = {};
+
+  voiceExerciseKeywordIndex.forEach(function (entry) {
+    var index = text.indexOf(entry.keyword);
+    if (index === -1) return;
+    rawMatches.push({
+      index: index,
+      end: index + entry.keyword.length,
+      keyword: entry.keyword,
+      name: entry.name
+    });
+  });
+
+  rawMatches.sort(function (a, b) {
+    if (a.index !== b.index) return a.index - b.index;
+    return b.keyword.length - a.keyword.length;
+  });
+
+  return rawMatches.filter(function (match) {
+    var overlaps = pickedRanges.some(function (range) {
+      return match.index < range.end && match.end > range.start;
+    });
+    if (overlaps || pickedNames[match.name]) return false;
+    pickedRanges.push({ start: match.index, end: match.end });
+    pickedNames[match.name] = true;
+    return true;
+  });
+}
+
+function parseVoiceExerciseOverrides(segment) {
+  var setsMatch = segment.match(/([零一二三四五六七八九十两\d]+)\s*组/);
+  var repsRangeMatch = segment.match(/([零一二三四五六七八九十两\d]+)\s*(?:到|至|-|~)\s*([零一二三四五六七八九十两\d]+)\s*次/);
+  var repsMatch = segment.match(/([零一二三四五六七八九十两\d]+)\s*次/);
+  var weightMatch = segment.match(/(\d+(?:\.\d+)?)\s*(?:kg|KG|公斤|千克)/);
+  var restMatch = segment.match(/休息\s*([零一二三四五六七八九十两\d]+)\s*(秒|分钟|分)/);
+  var intensityMatch = segment.match(/RPE\s*([\d.]+)/i);
+  var restValue = 0;
+  var intensity = "";
+
+  if (restMatch) {
+    restValue = parseVoiceNumberToken(restMatch[1]);
+    if (restMatch[2] !== "秒") restValue = restValue * 60;
+  }
+
+  if (intensityMatch) intensity = "RPE " + intensityMatch[1];
+  else if (segment.indexOf("轻松") > -1) intensity = "RPE 6-7";
+  else if (segment.indexOf("吃力") > -1 || segment.indexOf("冲") > -1) intensity = "RPE 8-9";
+
+  return {
+    sets: setsMatch ? String(parseVoiceNumberToken(setsMatch[1])) : "",
+    reps: repsRangeMatch
+      ? parseVoiceNumberToken(repsRangeMatch[1]) + "-" + parseVoiceNumberToken(repsRangeMatch[2])
+      : (repsMatch ? String(parseVoiceNumberToken(repsMatch[1])) : ""),
+    weight: weightMatch ? String(weightMatch[1]) : "",
+    rest: restValue ? restValue : "",
+    intensity: intensity
+  };
+}
+
+function buildVoiceExercisePlan(name, muscle, overrides) {
+  var template = getVoiceTemplateForExercise(name, muscle);
+  var personalized = buildAiExercise(template, "增肌", getLastWorkoutExerciseMap(muscle));
+
+  if (overrides.sets) personalized.sets = parseInt(overrides.sets, 10) || personalized.sets;
+  if (overrides.reps) personalized.reps = overrides.reps;
+  if (overrides.weight) personalized.weight = overrides.weight;
+  if (overrides.rest) personalized.rest = overrides.rest;
+  if (overrides.intensity) personalized.intensity = overrides.intensity;
+  return personalized;
+}
+
+function buildVoicePlanFromText(rawText) {
+  var text = String(rawText || "").replace(/(?:[，。；、]|\n)/g, " ").replace(/\s+/g, " ").trim();
+  var matches = findVoiceExerciseMatches(text);
+  var muscle = parseVoiceMuscle(text);
+  var exercises = [];
+  var i;
+  var segment;
+  var nextIndex;
+
+  if (!muscle && matches.length) muscle = getVoiceMuscleFromExercise(matches[0].name);
+  muscle = normalizeMuscle(muscle || getCurrentMuscle());
+
+  if (!matches.length) {
+    return {
+      muscle: muscle,
+      source: "fallback",
+      exercises: buildAiPlan(muscle, "增肌", 45).exercises
+    };
+  }
+
+  for (i = 0; i < matches.length; i++) {
+    nextIndex = i + 1 < matches.length ? matches[i + 1].index : text.length;
+    segment = text.slice(matches[i].index, nextIndex);
+    exercises.push(buildVoiceExercisePlan(matches[i].name, muscle, parseVoiceExerciseOverrides(segment)));
+  }
+
+  return {
+    muscle: muscle,
+    source: "voice",
+    exercises: exercises
+  };
+}
+
+function renderVoicePlan(plan) {
+  var title = document.getElementById("voice-result-title");
+  var list = document.getElementById("voice-result-list");
+
+  voicePlan = plan;
+  title.textContent = plan.source === "fallback"
+    ? "未识别到具体动作，已按 " + plan.muscle + " 生成基础计划"
+    : plan.muscle + " · 已识别 " + plan.exercises.length + " 个动作";
   list.innerHTML = "";
 
   plan.exercises.forEach(function (exercise) {
@@ -1236,21 +1825,35 @@ function renderAiResult() {
     note.textContent = exercise.intensity + " · 休息 " + exercise.rest + " 秒";
     left.appendChild(note);
 
-    var detail = document.createElement("span");
-    detail.className = "ai-ex-detail";
-    detail.textContent = [exercise.weight + " kg", exercise.sets + " 组", exercise.reps + " 次"].join(" × ");
-
     var progression = document.createElement("span");
     progression.className = "ai-ex-note";
     progression.textContent = exercise.progression;
     left.appendChild(progression);
+
+    var detail = document.createElement("span");
+    detail.className = "ai-ex-detail";
+    detail.textContent = [exercise.weight + " kg", exercise.sets + " 组", exercise.reps + " 次"].join(" × ");
 
     row.appendChild(left);
     row.appendChild(detail);
     list.appendChild(row);
   });
 
-  document.getElementById("ai-result").style.display = "block";
+  document.getElementById("voice-result").style.display = "block";
+}
+
+function parseVoicePlanInput() {
+  var input = document.getElementById("voice-input").value.trim();
+  var plan;
+
+  if (!input) {
+    showToast("先说一句或输入今天的训练计划");
+    return;
+  }
+
+  plan = buildVoicePlanFromText(input);
+  renderVoicePlan(plan);
+  setVoiceStatus(plan.source === "fallback" ? "没有识别到具体动作，已按当前部位生成基础计划。" : "已识别训练计划，可以直接导入。");
 }
 
 function showToast(message) {
@@ -1272,7 +1875,9 @@ function saveDraft() {
     exIdx: wm.exIdx,
     setDone: wm.setDone,
     restTotal: wm.restTotal,
-    sessionLog: wm.sessionLog
+    sessionLog: wm.sessionLog,
+    startedAt: wm.startedAt,
+    finishedAt: wm.finishedAt
   }));
   updateDraftBanner();
 }
@@ -1322,6 +1927,8 @@ function resumeDraft() {
   wm.setDone = draft.setDone || 0;
   wm.restTotal = draft.restTotal || 90;
   wm.sessionLog = draft.sessionLog || [];
+  wm.startedAt = draft.startedAt || new Date().toISOString();
+  wm.finishedAt = draft.finishedAt || "";
   wm.restEndTime = 0;
 
   clearInterval(wm.restTimer);
@@ -1347,6 +1954,8 @@ function startWorkoutSession(plan) {
   wm.restEndTime = 0;
   wm.restTotal = plan.length ? (parseInt(plan[0].rest, 10) || 90) : 90;
   wm.summary = null;
+  wm.startedAt = new Date().toISOString();
+  wm.finishedAt = "";
   wm.sessionLog = plan.map(function (exercise) {
     return {
       name: exercise.name,
@@ -1395,23 +2004,15 @@ function wmSkipCurrentExercise() {
   wmAdvanceToNextExercise();
 }
 
-function wmAutoSave() {
+function wmAutoSave(options) {
   var muscle = getCurrentMuscle();
   var today = getTodayStr();
-  var exercises = wm.sessionLog.filter(function (item) {
-    return item.completedSets.length > 0;
-  }).map(function (item) {
-    var lastSet = item.completedSets[item.completedSets.length - 1];
-    return {
-      name: item.name,
-      weight: lastSet.weight,
-      sets: String(item.completedSets.length),
-      reps: lastSet.reps
-    };
-  });
-
+  var exercises = buildExercisesFromSessionLog(wm.sessionLog);
+  var sessionLog = wm.sessionLog.map(normalizeSessionLogItem).filter(Boolean);
+  var plannedExercises = wm.exercises.map(normalizeExercise).filter(Boolean);
   var record;
   var existingIndex = -1;
+  var isFinal = options && options.isFinal;
 
   if (!exercises.length) return;
 
@@ -1419,6 +2020,11 @@ function wmAutoSave() {
     date: today,
     muscle: muscle,
     exercises: exercises,
+    plannedExercises: plannedExercises,
+    sessionLog: sessionLog,
+    totalVolume: getSessionLogVolume(sessionLog),
+    startedAt: wm.startedAt || new Date().toISOString(),
+    finishedAt: isFinal ? (wm.finishedAt || new Date().toISOString()) : "",
     note: "",
     content: buildContent(muscle, exercises),
     _wmSession: true

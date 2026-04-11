@@ -1291,6 +1291,94 @@ ul {
   background: var(--purple-light);
 }
 
+.voice-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.voice-tips {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f4f7fb;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.voice-actions,
+.voice-result-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.voice-status {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.voice-input {
+  width: 100%;
+  min-height: 128px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  resize: vertical;
+}
+
+.voice-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+#voice-start-btn,
+#voice-parse-btn,
+#voice-import-btn {
+  min-height: 46px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+#voice-start-btn,
+#voice-parse-btn {
+  flex: 1;
+  background: var(--purple);
+}
+
+#voice-start-btn:hover,
+#voice-parse-btn:hover {
+  background: var(--purple-hover);
+}
+
+#voice-import-btn {
+  flex: 1;
+  background: var(--blue);
+}
+
+.voice-result-header {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+#voice-result-title {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .cmp-date-row {
   display: flex;
   align-items: center;
@@ -1402,12 +1490,15 @@ ul {
   z-index: 300;
   display: flex;
   justify-content: center;
+  overflow: hidden;
   background: rgba(246, 247, 249, 0.98);
 }
 
 .wm-panel {
   width: 100%;
   max-width: 520px;
+  min-height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -1447,9 +1538,12 @@ ul {
 
 .wm-body {
   flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 28px 18px 24px;
 }
 
@@ -1871,10 +1965,56 @@ ul {
     padding-right: 16px;
   }
 
+  body {
+    font-size: 16px;
+  }
+
   .left-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 6px;
+  }
+
+  .stats-secondary,
+  .analytics-panel {
+    display: none;
+  }
+
+  .hero-copy h1 {
+    font-size: 34px;
+  }
+
+  .hero-subtitle,
+  .section-note,
+  .start-caption {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .prep-label,
+  .today-date,
+  .history-kicker,
+  .analytics-kicker {
+    font-size: 12px;
+  }
+
+  .pill-title {
+    font-size: 17px;
+  }
+
+  .pill-note {
+    font-size: 13px;
+  }
+
+  .btn-primary-workout,
+  .ai-entry-btn,
+  .manual-btn,
+  .backfill-link,
+  .data-btn,
+  .draft-resume-btn,
+  .draft-discard-btn {
+    min-height: 50px;
+    font-size: 16px;
   }
 
   .stats-grid {
@@ -1894,7 +2034,9 @@ ul {
   }
 
   .draft-banner-actions,
-  .ai-result-actions {
+  .ai-result-actions,
+  .voice-actions,
+  .voice-result-actions {
     flex-direction: column;
   }
 
