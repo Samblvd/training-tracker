@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-const DOUBAO_API_ENDPOINT = "https://ark.volces.com/api/v3/chat/completions";
+const OPENAI_RESPONSES_ENDPOINT = "https://api.openai.com/v1/responses";
+const DEFAULT_OPENAI_MODEL = "gpt-5.2-chat-latest";
 
 function buildSystemPrompt() {
   return [
@@ -33,11 +34,11 @@ function buildUserPrompt(payload: {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.DOUBAO_API_KEY;
-  const modelId = process.env.DOUBAO_MODEL_ID;
+  const apiKey = process.env.OPENAI_API_KEY;
+  const modelId = process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL;
 
-  if (!apiKey || !modelId) {
-    return NextResponse.json({ error: "服务端未配置 Doubao API" }, { status: 500 });
+  if (!apiKey) {
+    return NextResponse.json({ error: "服务端未配置 OpenAI API" }, { status: 500 });
   }
 
   const payload = await request.json();
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const upstream = await fetch(DOUBAO_API_ENDPOINT, {
+    const upstream = await fetch(OPENAI_RESPONSES_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -55,23 +56,35 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: modelId,
         temperature: 0.1,
-        messages: [
-          { role: "system", content: buildSystemPrompt() },
-          { role: "user", content: buildUserPrompt(payload) },
+        input: [
+          {
+            role: "developer",
+            content: [{ type: "input_text", text: buildSystemPrompt() }],
+          },
+          {
+            role: "user",
+            content: [{ type: "input_text", text: buildUserPrompt(payload) }],
+          },
         ],
       }),
     });
 
     if (!upstream.ok) {
       const detail = await upstream.text();
-      return NextResponse.json({ error: "Doubao 请求失败", detail }, { status: upstream.status });
+      return NextResponse.json({ error: "OpenAI 请求失败", detail }, { status: upstream.status });
     }
 
     const result = await upstream.json();
-    const content = result?.choices?.[0]?.message?.content || "";
+    const content =
+      result?.output_text ||
+      result?.output?.flatMap((item: { content?: Array<{ type?: string; text?: string }> }) => item.content || [])
+        ?.filter((item: { type?: string; text?: string }) => item.type === "output_text")
+        ?.map((item: { text?: string }) => item.text || "")
+        ?.join("\n") ||
+      "";
 
     if (!content) {
-      return NextResponse.json({ error: "Doubao 没有返回可用内容" }, { status: 502 });
+      return NextResponse.json({ error: "OpenAI 没有返回可用内容" }, { status: 502 });
     }
 
     return NextResponse.json({ content });

@@ -39,12 +39,19 @@ http://localhost:3000
 
 ## AI 语音解析
 
-如果要启用服务端 AI 解析，请配置：
+如果要启用服务端 AI 解析，请配置 OpenAI：
 
 ```bash
-DOUBAO_API_KEY=your_key
-DOUBAO_MODEL_ID=your_model
+OPENAI_API_KEY=your_key
 ```
+
+可选：
+
+```bash
+OPENAI_MODEL=gpt-5.2-chat-latest
+```
+
+默认会直接使用 OpenAI 当前的最新 ChatGPT 风格模型 `gpt-5.2-chat-latest`，并通过官方更推荐的 Responses API 调用。
 
 未配置时，前端会自动回退到本地规则解析。
 
