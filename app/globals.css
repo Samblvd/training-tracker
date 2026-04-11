@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f4efe9;
+  --card: rgba(255, 255, 255, 0.88);
+  --foreground: #111827;
+  --accent-strong: #f15a22;
+  --accent-soft: #fff0e7;
+  --line: rgba(148, 163, 184, 0.2);
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(241, 90, 34, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 24%),
+    linear-gradient(180deg, #fbf8f5 0%, #f4efe9 100%);
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent-strong);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.35);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chart-bar {
+  background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
+}
+
+.chart-bar-volume {
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+}
+
+.frequency-fill {
+  background: linear-gradient(90deg, #fb923c 0%, #f97316 100%);
+}
+
+.glass-line {
+  border-color: var(--line);
+}
