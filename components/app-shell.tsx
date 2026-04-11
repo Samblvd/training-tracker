@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CalendarClock, Dumbbell, History, LayoutDashboard } from "lucide-react";
-import { ReactNode } from "react";
+import { BarChart3, CalendarClock, Dumbbell, History, LayoutDashboard, TimerReset } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn, formatTimer } from "@/lib/utils";
 import { useTrainingStore } from "@/store/training-store";
 
 const navItems = [
@@ -20,24 +20,61 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const selectedMuscle = useTrainingStore((state) => state.selectedMuscle);
   const workout = useTrainingStore((state) => state.workout);
+  const [now, setNow] = useState(0);
+
+  useEffect(() => {
+    if (!workout?.restEndAt) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(timer);
+  }, [workout?.restEndAt]);
+
   const isWorkoutComplete =
     !!workout &&
     workout.exercises.length > 0 &&
     workout.sessionLog.every((item) => item.completedSets.length >= (Number.parseInt(item.targetSets || "0", 10) || 0));
+  const hasActiveWorkout = !!workout && !isWorkoutComplete;
+  const currentExercise = workout?.exercises[workout.exIdx];
+  const currentLog = workout?.sessionLog[workout.exIdx];
+  const completedSets = currentLog?.completedSets.length || 0;
+  const targetSets = Number.parseInt(currentExercise?.sets || "0", 10) || 0;
+  const timerBase = now || ((workout?.restEndAt || 0) - (workout?.restTotal || 0) * 1000);
+  const remaining = workout?.restEndAt ? Math.max(0, Math.ceil((workout.restEndAt - timerBase) / 1000)) : 0;
+  const isResting = remaining > 0;
+
+  const mobileNavItems = hasActiveWorkout
+    ? [
+        { href: "/", label: "状态", icon: LayoutDashboard },
+        { href: "/workout", label: isResting ? formatTimer(remaining) : "倒计时", icon: TimerReset },
+      ]
+    : navItems;
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-slate-900">
       <div className="lg:hidden">
         <div className="sticky top-0 z-20 border-b border-white/70 bg-[rgba(255,250,245,0.92)] px-4 py-3 backdrop-blur">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-lg font-semibold tracking-[-0.04em] text-slate-950">训练助手</div>
-              <div className="text-xs text-slate-500">{workout ? (isWorkoutComplete ? "全部完成，等待保存" : `${selectedMuscle} · 训练进行中`) : `${selectedMuscle} · 准备开始`}</div>
+          {hasActiveWorkout ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate text-lg font-semibold tracking-[-0.04em] text-slate-950">{currentExercise?.name || "训练中"}</div>
+                <div className="text-xs text-slate-500">
+                  {selectedMuscle} · 第 {Math.min(completedSets + 1, targetSets || 1)} / {targetSets || 1} 组
+                </div>
+              </div>
+              <div className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
+                {isResting ? formatTimer(remaining) : "训练中"}
+              </div>
             </div>
-            <Link href="/workout" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white">
-              {workout ? "继续" : "训练中"}
-            </Link>
-          </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-lg font-semibold tracking-[-0.04em] text-slate-950">训练助手</div>
+                <div className="text-xs text-slate-500">{workout ? (isWorkoutComplete ? "全部完成，等待保存" : `${selectedMuscle} · 训练进行中`) : `${selectedMuscle} · 准备开始`}</div>
+              </div>
+              <Link href="/workout" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white">
+                {workout ? "查看训练" : "训练中"}
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -93,8 +130,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
-        <div className="grid grid-cols-5 gap-1 px-2 py-2">
-          {navItems.map((item) => {
+        <div className={cn("gap-1 px-2 py-2", hasActiveWorkout ? "grid grid-cols-2" : "grid grid-cols-5")}>
+          {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
