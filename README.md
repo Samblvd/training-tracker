@@ -39,21 +39,49 @@ http://localhost:3000
 
 ## AI 语音解析
 
-如果要启用服务端 AI 解析，请配置 OpenAI：
+### 本地开发
+
+先复制环境变量模板：
+
+```bash
+cp .env.example .env.local
+```
+
+然后把 `.env.local` 里的值改成你自己的：
 
 ```bash
 OPENAI_API_KEY=your_key
-```
-
-可选：
-
-```bash
 OPENAI_MODEL=gpt-5.2-chat-latest
 ```
 
-默认会直接使用 OpenAI 当前的最新 ChatGPT 风格模型 `gpt-5.2-chat-latest`，并通过官方更推荐的 Responses API 调用。
+`OPENAI_MODEL` 可选，不填时默认会使用 `gpt-5.2-chat-latest`。
 
-未配置时，前端会自动回退到本地规则解析。
+### 线上部署
+
+不要把 `.env.local` 提交到 GitHub。
+
+部署到 Vercel 时，请在项目后台分别配置环境变量：
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`（可选）
+
+建议至少区分：
+
+- Development
+- Preview
+- Production
+
+### 当前已加的安全措施
+
+- OpenAI key 仅在服务端读取，不会暴露到前端
+- 浏览器只请求本站 `/api/voice-plan`，不会直接请求 OpenAI
+- `.env*` 已被 `.gitignore` 忽略
+- `/api/voice-plan` 已增加基础来源校验
+- `/api/voice-plan` 已增加简易限流
+- `/api/voice-plan` 已增加输入长度限制
+- 上游错误细节不会直接返回给前端
+
+未配置服务端环境变量时，前端会自动回退到本地规则解析。
 
 ## 校验
 

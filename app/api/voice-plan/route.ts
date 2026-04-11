@@ -2,6 +2,91 @@ import { NextResponse } from "next/server";
 
 const OPENAI_RESPONSES_ENDPOINT = "https://api.openai.com/v1/responses";
 const DEFAULT_OPENAI_MODEL = "gpt-5.2-chat-latest";
+const MAX_INPUT_LENGTH = 800;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 12;
+
+type RateLimitEntry = {
+  count: number;
+  resetAt: number;
+};
+
+type RateLimitStore = Map<string, RateLimitEntry>;
+
+type VoicePlanPayload = {
+  currentMuscle?: string;
+  exerciseLibraryPrompt?: string;
+  recentWorkouts?: string;
+  input?: string;
+};
+
+function getRateLimitStore() {
+  const globalStore = globalThis as typeof globalThis & {
+    __voicePlanRateLimitStore__?: RateLimitStore;
+  };
+
+  if (!globalStore.__voicePlanRateLimitStore__) {
+    globalStore.__voicePlanRateLimitStore__ = new Map();
+  }
+
+  return globalStore.__voicePlanRateLimitStore__;
+}
+
+function cleanupExpiredRateLimits(store: RateLimitStore, now: number) {
+  for (const [key, entry] of store.entries()) {
+    if (entry.resetAt <= now) {
+      store.delete(key);
+    }
+  }
+}
+
+function getClientIp(request: Request) {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0]?.trim() || "unknown";
+  }
+
+  return request.headers.get("x-real-ip") || "unknown";
+}
+
+function enforceRateLimit(request: Request) {
+  const store = getRateLimitStore();
+  const now = Date.now();
+  cleanupExpiredRateLimits(store, now);
+
+  const clientKey = getClientIp(request);
+  const existing = store.get(clientKey);
+
+  if (!existing || existing.resetAt <= now) {
+    store.set(clientKey, {
+      count: 1,
+      resetAt: now + RATE_LIMIT_WINDOW_MS,
+    });
+    return null;
+  }
+
+  if (existing.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+  }
+
+  existing.count += 1;
+  store.set(clientKey, existing);
+  return null;
+}
+
+function isAllowedOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) {
+    return true;
+  }
+
+  try {
+    const requestOrigin = new URL(request.url).origin;
+    return origin === requestOrigin;
+  } catch {
+    return false;
+  }
+}
 
 function buildSystemPrompt() {
   return [
@@ -17,12 +102,7 @@ function buildSystemPrompt() {
   ].join("\n");
 }
 
-function buildUserPrompt(payload: {
-  currentMuscle?: string;
-  exerciseLibraryPrompt?: string;
-  recentWorkouts?: string;
-  input?: string;
-}) {
+function buildUserPrompt(payload: VoicePlanPayload) {
   return [
     `当前选中的训练部位：${payload.currentMuscle || ""}`,
     "动作库：",
@@ -41,9 +121,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "服务端未配置 OpenAI API" }, { status: 500 });
   }
 
-  const payload = await request.json();
-  if (!payload?.input || !String(payload.input).trim()) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: "非法请求来源" }, { status: 403 });
+  }
+
+  const retryAfter = enforceRateLimit(request);
+  if (retryAfter) {
+    return NextResponse.json(
+      { error: "请求过于频繁，请稍后再试" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(retryAfter),
+        },
+      },
+    );
+  }
+
+  const payload = (await request.json()) as VoicePlanPayload;
+  const input = String(payload?.input || "").trim();
+
+  if (!input) {
     return NextResponse.json({ error: "缺少训练描述" }, { status: 400 });
+  }
+
+  if (input.length > MAX_INPUT_LENGTH) {
+    return NextResponse.json(
+      { error: `训练描述过长，请控制在 ${MAX_INPUT_LENGTH} 个字符以内` },
+      { status: 400 },
+    );
   }
 
   try {
@@ -63,7 +169,7 @@ export async function POST(request: Request) {
           },
           {
             role: "user",
-            content: [{ type: "input_text", text: buildUserPrompt(payload) }],
+            content: [{ type: "input_text", text: buildUserPrompt({ ...payload, input }) }],
           },
         ],
       }),
@@ -71,27 +177,31 @@ export async function POST(request: Request) {
 
     if (!upstream.ok) {
       const detail = await upstream.text();
-      return NextResponse.json({ error: "OpenAI 请求失败", detail }, { status: upstream.status });
+      console.error("OpenAI voice-plan upstream error", {
+        status: upstream.status,
+        detail,
+      });
+
+      return NextResponse.json({ error: "AI 服务暂时不可用，请稍后再试" }, { status: 502 });
     }
 
     const result = await upstream.json();
     const content =
       result?.output_text ||
-      result?.output?.flatMap((item: { content?: Array<{ type?: string; text?: string }> }) => item.content || [])
+      result?.output
+        ?.flatMap((item: { content?: Array<{ type?: string; text?: string }> }) => item.content || [])
         ?.filter((item: { type?: string; text?: string }) => item.type === "output_text")
         ?.map((item: { text?: string }) => item.text || "")
         ?.join("\n") ||
       "";
 
     if (!content) {
-      return NextResponse.json({ error: "OpenAI 没有返回可用内容" }, { status: 502 });
+      return NextResponse.json({ error: "AI 没有返回可用内容" }, { status: 502 });
     }
 
     return NextResponse.json({ content });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "服务端调用失败" },
-      { status: 500 },
-    );
+    console.error("Voice plan route failed", error);
+    return NextResponse.json({ error: "服务端调用失败，请稍后再试" }, { status: 500 });
   }
 }
