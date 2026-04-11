@@ -1369,6 +1369,9 @@ ul {
 }
 
 .voice-result-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border-soft);
 }
@@ -1377,6 +1380,123 @@ ul {
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
+}
+
+.voice-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.voice-meta-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.voice-transcript-card,
+.voice-ex-row {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.voice-transcript-card {
+  padding: 14px 16px;
+}
+
+.voice-transcript-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.voice-transcript {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.voice-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voice-ex-row {
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.voice-ex-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.voice-ex-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.voice-ex-name-input:focus,
+.voice-ex-control input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+.voice-ex-note {
+  min-width: 124px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.voice-ex-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.voice-ex-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.voice-ex-control span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.voice-ex-control input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font: inherit;
+  color: var(--text-primary);
 }
 
 .cmp-date-row {
@@ -2038,6 +2158,18 @@ ul {
   .voice-actions,
   .voice-result-actions {
     flex-direction: column;
+  }
+
+  .voice-ex-top,
+  .voice-ex-controls {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .voice-ex-note {
+    min-width: 0;
+    text-align: left;
   }
 
   .analytics-header,

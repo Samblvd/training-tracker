@@ -210,8 +210,13 @@
         <div id="voice-result" style="display:none;">
           <div class="voice-result-header">
             <span id="voice-result-title"></span>
+            <div id="voice-result-meta" class="voice-result-meta"></div>
           </div>
-          <div id="voice-result-list" class="ai-result-list"></div>
+          <div class="voice-transcript-card">
+            <div class="voice-transcript-label">原始识别文本</div>
+            <div id="voice-transcript" class="voice-transcript"></div>
+          </div>
+          <div id="voice-result-list" class="voice-result-list"></div>
           <div class="voice-result-actions">
             <button id="voice-import-btn" type="button">导入到今日训练</button>
             <button id="voice-reset-btn" type="button" class="btn-ghost">重新识别</button>

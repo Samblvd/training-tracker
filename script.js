@@ -202,18 +202,59 @@ var voiceExerciseAliases = {
   "绳索引拉": "宽握下拉",
   "引拉": "宽握下拉",
   "绳索下拉": "宽握下拉",
+  "高位下拉": "宽握下拉",
+  "宽拉": "宽握下拉",
+  "宽握拉": "宽握下拉",
+  "背阔下拉": "宽握下拉",
+  "窄握拉": "窄握下拉",
+  "对握拉": "对握下拉",
   "下拉": "宽握下拉",
+  "平板卧推": "平板杠铃卧推",
+  "杠铃卧推": "平板杠铃卧推",
   "卧推": "平板杠铃卧推",
   "上斜卧推": "上斜杠铃卧推",
+  "上斜杠铃": "上斜杠铃卧推",
+  "上斜哑铃": "上斜哑铃卧推",
+  "哑铃平板卧推": "哑铃卧推",
+  "哑铃卧推": "哑铃卧推",
+  "推胸": "器械推胸",
+  "器械推胸": "器械推胸",
+  "飞鸟": "反向飞鸟",
+  "后束飞鸟": "反向飞鸟",
   "推肩": "哑铃推肩",
+  "哑铃推肩": "哑铃推肩",
+  "肩推": "器械推肩",
+  "器械肩推": "器械推肩",
   "推举": "杠铃推举",
-  "深蹲": "杠铃深蹲",
-  "硬拉": "罗马尼亚硬拉",
+  "杠铃推举": "杠铃推举",
+  "阿诺德": "阿诺德推举",
+  "侧平举": "哑铃侧平举",
+  "绳索侧平举": "绳索侧平举",
+  "面拉": "面拉",
   "划船": "坐姿划船",
+  "坐姿划船": "坐姿划船",
+  "器械划船": "器械划船",
+  "杠铃划船": "杠铃划船",
+  "哑铃划船": "哑铃划船",
+  "t杠划船": "T杠划船",
+  "引体": "引体向上",
+  "引体向上": "引体向上",
+  "深蹲": "杠铃深蹲",
+  "杠铃深蹲": "杠铃深蹲",
+  "史密斯深蹲": "史密斯深蹲",
+  "腿举": "腿举",
+  "弓步": "弓步蹲",
+  "弓步蹲": "弓步蹲",
+  "分腿蹲": "保加利亚分腿蹲",
+  "保加利亚": "保加利亚分腿蹲",
   "腿弯举": "坐姿腿弯举",
   "腿屈伸": "坐姿腿屈伸",
-  "分腿蹲": "保加利亚分腿蹲",
-  "夹胸": "绳索夹胸"
+  "硬拉": "罗马尼亚硬拉",
+  "罗马尼亚硬拉": "罗马尼亚硬拉",
+  "单腿硬拉": "单腿罗马尼亚硬拉",
+  "臀桥": "臀桥",
+  "夹胸": "绳索夹胸",
+  "绳索夹胸": "绳索夹胸"
 };
 
 var voiceMuscleKeywords = [
@@ -318,9 +359,7 @@ document.getElementById("voice-import-btn").onclick = function () {
 };
 document.getElementById("voice-reset-btn").onclick = function () {
   voicePlan = null;
-  document.getElementById("voice-result").style.display = "none";
-  document.getElementById("voice-result-title").textContent = "";
-  document.getElementById("voice-result-list").innerHTML = "";
+  resetVoiceResultView();
   setVoiceStatus(getVoiceSupportMessage());
 };
 
@@ -1510,11 +1549,17 @@ function setVoiceStatus(message) {
   document.getElementById("voice-status").textContent = message;
 }
 
-function openVoiceModal() {
-  voicePlan = null;
+function resetVoiceResultView() {
   document.getElementById("voice-result").style.display = "none";
   document.getElementById("voice-result-title").textContent = "";
+  document.getElementById("voice-result-meta").innerHTML = "";
+  document.getElementById("voice-transcript").textContent = "";
   document.getElementById("voice-result-list").innerHTML = "";
+}
+
+function openVoiceModal() {
+  voicePlan = null;
+  resetVoiceResultView();
   setVoiceStatus(getVoiceSupportMessage());
   document.getElementById("voice-modal").style.display = "flex";
 }
@@ -1550,7 +1595,7 @@ function ensureVoiceRecognition() {
     }
 
     if (finalText) {
-      input.value = (input.value + " " + finalText).replace(/\s+/g, " ").trim();
+      input.value = normalizeVoiceTranscript((input.value + " " + finalText).replace(/\s+/g, " ").trim());
       setVoiceStatus("已转成文字，可以继续说，也可以直接识别训练计划。");
     } else if (interimText) {
       setVoiceStatus("正在识别：" + interimText);
@@ -1590,6 +1635,29 @@ function startVoiceRecognition() {
 function stopVoiceRecognition() {
   if (!voiceRecognition || !voiceIsListening) return;
   voiceRecognition.stop();
+}
+
+function normalizeVoiceTranscript(rawText) {
+  var text = String(rawText || "");
+  var replacements = [
+    [/公斤|千克/g, "kg"],
+    [/公 斤/g, "kg"],
+    [/ＫＧ|Kg/g, "kg"],
+    [/背部|背阔/g, "背"],
+    [/胸部|胸肌/g, "胸"],
+    [/肩部|肩膀/g, "肩"],
+    [/腿部|下肢/g, "臀腿"],
+    [/今天我要练|今天练|今天想练/g, ""],
+    [/然后|再来|还有|接着/g, "，"],
+    [/加重到/g, " "],
+    [/乘以|乘/g, "x"]
+  ];
+
+  replacements.forEach(function (item) {
+    text = text.replace(item[0], item[1]);
+  });
+
+  return text.replace(/\s+/g, " ").trim();
 }
 
 function parseVoiceNumberToken(token) {
@@ -1691,6 +1759,18 @@ function getVoiceTemplateForExercise(name, muscle) {
   });
 }
 
+function matchVoiceExerciseName(segment) {
+  var matches = findVoiceExerciseMatches(segment);
+  if (matches.length) return matches[0].name;
+  return "";
+}
+
+function extractVoiceSegments(text) {
+  return text.split(/[，,。；;]+/).map(function (part) {
+    return part.trim();
+  }).filter(Boolean);
+}
+
 function findVoiceExerciseMatches(text) {
   var rawMatches = [];
   var pickedRanges = [];
@@ -1766,77 +1846,176 @@ function buildVoiceExercisePlan(name, muscle, overrides) {
 }
 
 function buildVoicePlanFromText(rawText) {
-  var text = String(rawText || "").replace(/(?:[，。；、]|\n)/g, " ").replace(/\s+/g, " ").trim();
-  var matches = findVoiceExerciseMatches(text);
-  var muscle = parseVoiceMuscle(text);
+  var normalizedText = normalizeVoiceTranscript(rawText);
+  var segments = extractVoiceSegments(normalizedText);
+  var muscle = parseVoiceMuscle(normalizedText);
   var exercises = [];
-  var i;
-  var segment;
-  var nextIndex;
+  var fallbackMatches;
 
-  if (!muscle && matches.length) muscle = getVoiceMuscleFromExercise(matches[0].name);
+  segments.forEach(function (segment) {
+    var exerciseName = matchVoiceExerciseName(segment);
+    if (!exerciseName) return;
+    exercises.push({
+      name: exerciseName,
+      segment: segment,
+      overrides: parseVoiceExerciseOverrides(segment)
+    });
+  });
+
+  if (!muscle && exercises.length) muscle = getVoiceMuscleFromExercise(exercises[0].name);
   muscle = normalizeMuscle(muscle || getCurrentMuscle());
 
-  if (!matches.length) {
+  if (!exercises.length) {
+    fallbackMatches = findVoiceExerciseMatches(normalizedText);
+    fallbackMatches.forEach(function (match, index) {
+      var nextIndex = index + 1 < fallbackMatches.length ? fallbackMatches[index + 1].index : normalizedText.length;
+      var segment = normalizedText.slice(match.index, nextIndex);
+      exercises.push({
+        name: match.name,
+        segment: segment,
+        overrides: parseVoiceExerciseOverrides(segment)
+      });
+    });
+  }
+
+  if (!exercises.length) {
     return {
       muscle: muscle,
       source: "fallback",
+      transcript: normalizedText,
+      matchedCount: 0,
       exercises: buildAiPlan(muscle, "增肌", 45).exercises
     };
-  }
-
-  for (i = 0; i < matches.length; i++) {
-    nextIndex = i + 1 < matches.length ? matches[i + 1].index : text.length;
-    segment = text.slice(matches[i].index, nextIndex);
-    exercises.push(buildVoiceExercisePlan(matches[i].name, muscle, parseVoiceExerciseOverrides(segment)));
   }
 
   return {
     muscle: muscle,
     source: "voice",
-    exercises: exercises
+    transcript: normalizedText,
+    matchedCount: exercises.length,
+    exercises: exercises.map(function (item) {
+      return buildVoiceExercisePlan(item.name, muscle, item.overrides);
+    })
   };
+}
+
+function getAllExerciseOptions() {
+  var options = [];
+  Object.keys(exerciseLibrary).forEach(function (muscle) {
+    exerciseLibrary[muscle].forEach(function (exercise) {
+      options.push(exercise.name);
+    });
+  });
+  return options;
+}
+
+function buildVoiceResultMeta(plan) {
+  var meta = [];
+  meta.push("识别到 " + plan.exercises.length + " 个动作");
+  meta.push("训练部位：" + plan.muscle);
+  if (plan.source === "fallback") meta.push("未命中动作名，已回退到基础模板");
+  return meta;
+}
+
+function updateVoicePlanExerciseField(index, field, value) {
+  var item = voicePlan && voicePlan.exercises ? voicePlan.exercises[index] : null;
+  if (!item) return;
+  if (field === "name") {
+    item.name = normalizeExerciseName(value);
+    if (!findExerciseDefinition(item.name)) item.name = value;
+    return;
+  }
+  item[field] = value;
+}
+
+function createVoiceExerciseRow(exercise, index) {
+  var row = document.createElement("div");
+  var top = document.createElement("div");
+  var nameInput = document.createElement("input");
+  var note = document.createElement("div");
+  var controls = document.createElement("div");
+  var fields = [
+    { key: "weight", label: "KG", type: "number", step: "0.5" },
+    { key: "sets", label: "组数", type: "number", step: "1" },
+    { key: "reps", label: "次数", type: "text" }
+  ];
+
+  row.className = "voice-ex-row";
+  top.className = "voice-ex-top";
+  nameInput.className = "voice-ex-name-input";
+  nameInput.setAttribute("list", "voice-exercise-options");
+  nameInput.value = exercise.name;
+  nameInput.addEventListener("change", function () {
+    updateVoicePlanExerciseField(index, "name", this.value.trim());
+    this.value = voicePlan.exercises[index].name;
+  });
+  note.className = "voice-ex-note";
+  note.textContent = exercise.intensity + " · 休息 " + exercise.rest + " 秒";
+
+  top.appendChild(nameInput);
+  top.appendChild(note);
+  row.appendChild(top);
+
+  controls.className = "voice-ex-controls";
+  fields.forEach(function (field) {
+    var wrap = document.createElement("label");
+    var label = document.createElement("span");
+    var input = document.createElement("input");
+    wrap.className = "voice-ex-control";
+    label.textContent = field.label;
+    input.type = field.type;
+    input.value = exercise[field.key];
+    if (field.type === "number") input.step = field.step;
+    input.addEventListener("input", function () {
+      updateVoicePlanExerciseField(index, field.key, this.value);
+    });
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+    controls.appendChild(wrap);
+  });
+
+  row.appendChild(controls);
+  return row;
+}
+
+function ensureVoiceExerciseDatalist() {
+  var list = document.getElementById("voice-exercise-options");
+  var options;
+  if (list) return;
+  list = document.createElement("datalist");
+  list.id = "voice-exercise-options";
+  options = getAllExerciseOptions();
+  options.forEach(function (name) {
+    var option = document.createElement("option");
+    option.value = name;
+    list.appendChild(option);
+  });
+  document.body.appendChild(list);
 }
 
 function renderVoicePlan(plan) {
   var title = document.getElementById("voice-result-title");
+  var meta = document.getElementById("voice-result-meta");
+  var transcript = document.getElementById("voice-transcript");
   var list = document.getElementById("voice-result-list");
 
+  ensureVoiceExerciseDatalist();
   voicePlan = plan;
   title.textContent = plan.source === "fallback"
     ? "未识别到具体动作，已按 " + plan.muscle + " 生成基础计划"
     : plan.muscle + " · 已识别 " + plan.exercises.length + " 个动作";
+  meta.innerHTML = "";
+  buildVoiceResultMeta(plan).forEach(function (item) {
+    var chip = document.createElement("span");
+    chip.className = "voice-meta-chip";
+    chip.textContent = item;
+    meta.appendChild(chip);
+  });
+  transcript.textContent = plan.transcript || document.getElementById("voice-input").value.trim();
   list.innerHTML = "";
 
-  plan.exercises.forEach(function (exercise) {
-    var row = document.createElement("div");
-    row.className = "ai-ex-row";
-
-    var left = document.createElement("div");
-    left.className = "ai-ex-left";
-
-    var name = document.createElement("span");
-    name.className = "ai-ex-name";
-    name.textContent = exercise.name;
-    left.appendChild(name);
-
-    var note = document.createElement("span");
-    note.className = "ai-ex-note";
-    note.textContent = exercise.intensity + " · 休息 " + exercise.rest + " 秒";
-    left.appendChild(note);
-
-    var progression = document.createElement("span");
-    progression.className = "ai-ex-note";
-    progression.textContent = exercise.progression;
-    left.appendChild(progression);
-
-    var detail = document.createElement("span");
-    detail.className = "ai-ex-detail";
-    detail.textContent = [exercise.weight + " kg", exercise.sets + " 组", exercise.reps + " 次"].join(" × ");
-
-    row.appendChild(left);
-    row.appendChild(detail);
-    list.appendChild(row);
+  plan.exercises.forEach(function (exercise, index) {
+    list.appendChild(createVoiceExerciseRow(exercise, index));
   });
 
   document.getElementById("voice-result").style.display = "block";
@@ -1853,7 +2032,7 @@ function parseVoicePlanInput() {
 
   plan = buildVoicePlanFromText(input);
   renderVoicePlan(plan);
-  setVoiceStatus(plan.source === "fallback" ? "没有识别到具体动作，已按当前部位生成基础计划。" : "已识别训练计划，可以直接导入。");
+  setVoiceStatus(plan.source === "fallback" ? "没有识别到具体动作，已按当前部位生成基础计划。" : "已识别训练计划，导入前可以微调每个动作。");
 }
 
 function showToast(message) {
