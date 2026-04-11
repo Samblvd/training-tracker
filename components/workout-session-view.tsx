@@ -66,7 +66,7 @@ export function WorkoutSessionView() {
 
   if (isWorkoutFinished && workout.summary) {
     return (
-      <PanelCard title="训练完成" description="这次训练已经保存好了，下面是给你的简短复盘。" className="overflow-hidden">
+      <PanelCard title="训练完成" description="这次训练已经自动保存好了，下面是给你的简短复盘。" className="overflow-hidden">
         <div className="grid gap-5">
           <div className="grid gap-3 md:grid-cols-3">
             {[
@@ -186,27 +186,16 @@ export function WorkoutSessionView() {
                     <div className="text-sm font-semibold uppercase tracking-[0.24em]">当前动作已完成</div>
                     <div className="text-3xl font-semibold tracking-[-0.05em]">{currentExercise?.name}</div>
                     <div className="text-sm leading-6 text-current/80">
-                      {nextExercise ? `下一动作是 ${nextExercise.name}，继续把节奏推进下去。` : "已经是最后一个动作了，可以直接保存这次训练。"}
+                      {nextExercise ? `下一动作是 ${nextExercise.name}，继续把节奏推进下去。` : "最后一组完成后会自动保存，并直接进入训练总结。"}
                     </div>
-                    <div className="flex flex-wrap gap-3">
-                      {nextExercise ? (
+                    {nextExercise ? (
+                      <div className="flex flex-wrap gap-3">
                         <button type="button" onClick={() => nextWorkoutExercise()} className="inline-flex items-center gap-2 rounded-full bg-[var(--accent-strong)] px-4 py-2.5 text-sm font-medium text-white">
                           进入下一动作
                           <ArrowRight className="h-4 w-4" />
                         </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const result = finishWorkout();
-                            setStatus(result.message);
-                          }}
-                          className="rounded-full bg-slate-950 px-4 py-2.5 text-sm font-medium text-white"
-                        >
-                          保存并返回记录
-                        </button>
-                      )}
-                    </div>
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="grid gap-2 text-left">
@@ -284,7 +273,7 @@ export function WorkoutSessionView() {
                   }}
                   className="rounded-full border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700"
                 >
-                  保存并结束训练
+                  提前结束训练
                 </button>
               </div>
             </div>

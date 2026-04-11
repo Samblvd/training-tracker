@@ -65,14 +65,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-lg font-semibold tracking-[-0.04em] text-slate-950">训练助手</div>
-                <div className="text-xs text-slate-500">{workout ? (isWorkoutComplete ? "全部完成，等待保存" : `${selectedMuscle} · 训练进行中`) : `${selectedMuscle} · 准备开始`}</div>
-              </div>
-              <Link href="/workout" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white">
-                {workout ? "查看训练" : "训练中"}
-              </Link>
+            <div>
+              <div className="text-lg font-semibold tracking-[-0.04em] text-slate-950">训练助手</div>
+              <div className="text-xs text-slate-500">{selectedMuscle} · 准备开始</div>
             </div>
           )}
         </div>

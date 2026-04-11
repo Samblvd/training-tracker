@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mic, Play, History, BarChart3, ChevronRight, TimerReset, Dumbbell, CheckCircle2 } from "lucide-react";
+import { Mic, Play, History, BarChart3, ChevronRight, TimerReset, Dumbbell } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { PanelCard } from "@/components/panel-card";
@@ -45,8 +45,8 @@ export function HomeTrainingFocus() {
     if (!workout) return null;
     if (isWorkoutComplete) {
       return {
-        label: "全部动作完成",
-        detail: "这次训练已经做完了，回到训练页保存并生成总结就行。",
+        label: "训练已完成",
+        detail: "当前会话已经结束，不再在首页给你额外弹出无效操作。",
       };
     }
     if (isResting) {
@@ -68,8 +68,12 @@ export function HomeTrainingFocus() {
   }, [completedSets, currentExercise, isResting, isWorkoutComplete, remaining, targetSets, workout]);
 
   const handlePrimaryAction = () => {
-    if (workout) {
+    if (workout && !isWorkoutComplete) {
       router.push("/workout");
+      return;
+    }
+
+    if (workout && isWorkoutComplete) {
       return;
     }
 
@@ -83,11 +87,11 @@ export function HomeTrainingFocus() {
   return (
     <div className="grid gap-6">
       <PanelCard
-        title={workout ? (isWorkoutComplete ? "完成今天的训练" : "继续今天的训练") : "训练状态"}
+        title={workout ? (isWorkoutComplete ? "训练状态" : "继续今天的训练") : "训练状态"}
         description={
           workout
             ? isWorkoutComplete
-              ? "动作已经全部完成了，现在只差最后保存和查看总结。"
+              ? "训练完成后，首页只保留状态，不再出现没有作用的额外按钮。"
               : "先回到当前动作和节奏，不要让训练被页面信息打断。"
             : "首页只保留训练状态。选好部位后，直接开始。"
         }
@@ -120,7 +124,7 @@ export function HomeTrainingFocus() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-3">
                 <div className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-white/70">
-                  {workout ? (isWorkoutComplete ? "待保存" : "训练继续") : "训练启动"}
+                  {workout ? (isWorkoutComplete ? "已完成" : "训练继续") : "训练启动"}
                 </div>
                 <div>
                   <div className="text-3xl font-semibold tracking-[-0.05em] md:text-4xl">
@@ -132,14 +136,16 @@ export function HomeTrainingFocus() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handlePrimaryAction}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-strong)] px-6 py-4 text-base font-semibold text-white transition hover:brightness-110"
-              >
-                {workout ? (isWorkoutComplete ? <CheckCircle2 className="h-5 w-5" /> : <TimerReset className="h-5 w-5" />) : <Play className="h-5 w-5" />}
-                {workout ? (isWorkoutComplete ? "保存训练" : "继续训练") : "开始训练"}
-              </button>
+              {!isWorkoutComplete ? (
+                <button
+                  type="button"
+                  onClick={handlePrimaryAction}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-strong)] px-6 py-4 text-base font-semibold text-white transition hover:brightness-110"
+                >
+                  {workout ? <TimerReset className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                  {workout ? "继续训练" : "开始训练"}
+                </button>
+              ) : null}
             </div>
 
             <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -155,7 +161,7 @@ export function HomeTrainingFocus() {
                 <div className="text-xs uppercase tracking-[0.24em] text-white/50">当前节奏</div>
                 <div className="mt-2 text-xl font-semibold">
                   {isWorkoutComplete
-                    ? "等待保存"
+                    ? "已结束"
                     : isResting
                       ? `${formatTimer(remaining)} 休息中`
                       : workout

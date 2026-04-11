@@ -380,10 +380,38 @@ export const useTrainingStore = create<TrainingState>()(
           });
           workout.setDone += 1;
           const currentExercise = workout.exercises[workout.exIdx];
+          const targetSets = Number.parseInt(currentExercise.sets, 10) || 0;
+          const isCurrentExerciseComplete = workout.setDone >= targetSets;
+          const isLastExercise = workout.exIdx >= workout.exercises.length - 1;
           workout.restTotal = restSeconds;
-          workout.restEndAt =
-            workout.setDone >= (Number.parseInt(currentExercise.sets, 10) || 0) ? null : Date.now() + restSeconds * 1000;
-          return { workout };
+
+          if (!isCurrentExerciseComplete) {
+            workout.restEndAt = Date.now() + restSeconds * 1000;
+            return { workout };
+          }
+
+          workout.restEndAt = null;
+
+          if (!isLastExercise) {
+            return { workout };
+          }
+
+          const finishedWorkout: WorkoutSession = {
+            ...workout,
+            finishedAt: new Date().toISOString(),
+          };
+          const summary = buildWorkoutSummary(state.records, finishedWorkout);
+          const record = buildRecordFromWorkout({ ...finishedWorkout, summary });
+
+          return {
+            workout: {
+              ...finishedWorkout,
+              summary,
+              savedRecordId: record.id,
+              restEndAt: null,
+            },
+            records: [record, ...state.records].sort(compareDatesDesc),
+          };
         }),
       extendRest: (seconds = 30) =>
         set((state) => {
