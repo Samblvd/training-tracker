@@ -1,4 +1,4 @@
-var EXERCISE_NAME_ALIASES = {
+const EXERCISE_NAME_ALIASES = {
   "平板卧推": "平板杠铃卧推",
   "哑铃平板卧推": "哑铃卧推",
   "上斜器械推胸": "器械推胸",
@@ -28,7 +28,7 @@ function normalizeExerciseName(name) {
   return EXERCISE_NAME_ALIASES[name] || name;
 }
 
-var exerciseLibrary = {
+const exerciseLibrary = {
   胸: [
     createExercise({ name: "平板杠铃卧推", muscle_primary: "胸", muscle_secondary: ["三头", "肩前束"], movement: "推", pattern: "水平推", equipment: "杠铃", type: "复合" }),
     createExercise({ name: "上斜杠铃卧推", muscle_primary: "胸", muscle_secondary: ["三头", "肩前束"], movement: "推", pattern: "水平推", equipment: "杠铃", type: "复合" }),
@@ -85,7 +85,7 @@ var exerciseLibrary = {
   ]
 };
 
-var defaultPlans = {
+const defaultPlans = {
   胸: [
     { name: "平板杠铃卧推", weight: "70", sets: "4", reps: "8" },
     { name: "上斜哑铃卧推", weight: "26", sets: "4", reps: "10" },
@@ -112,7 +112,7 @@ var defaultPlans = {
   ]
 };
 
-var mockPlans = {
+const mockPlans = {
   胸: {
     增肌: [
       { name: "平板杠铃卧推", weight: "70", sets: "4", reps: "8", note: "控制离心，顶峰停顿" },
@@ -183,22 +183,45 @@ var mockPlans = {
   }
 };
 
-var muscleTagClass = {
+const muscleTagClass = {
   胸: "muscle-chest",
   肩: "muscle-shoulder",
   背: "muscle-back",
   臀腿: "muscle-legs"
 };
 
-var editingIndex = -1;
-var toastTimer = null;
-var voicePlan = null;
-var voiceRecognition = null;
-var voiceIsListening = false;
-var editorPlanMeta = {};
-var records = sanitizeRecords(JSON.parse(localStorage.getItem("records") || "[]"));
+const appState = {
+  ui: {
+    toastTimer: null
+  },
+  composer: {
+    editingIndex: -1,
+    planMeta: {}
+  },
+  voice: {
+    plan: null,
+    recognition: null,
+    isListening: false
+  },
+  workout: {
+    exercises: [],
+    exIdx: 0,
+    setDone: 0,
+    restTimer: null,
+    restEndTime: 0,
+    restTotal: 90,
+    sessionLog: [],
+    exDoneTimer: null,
+    summary: null,
+    startedAt: "",
+    finishedAt: ""
+  },
+  data: {
+    records: sanitizeRecords(JSON.parse(localStorage.getItem("records") || "[]"))
+  }
+};
 
-var voiceExerciseAliases = {
+const voiceExerciseAliases = {
   "绳索引拉": "宽握下拉",
   "引拉": "宽握下拉",
   "绳索下拉": "宽握下拉",
@@ -257,28 +280,14 @@ var voiceExerciseAliases = {
   "绳索夹胸": "绳索夹胸"
 };
 
-var voiceMuscleKeywords = [
+const voiceMuscleKeywords = [
   { muscle: "胸", keywords: ["胸部", "胸肌", "练胸", "胸"] },
   { muscle: "肩", keywords: ["肩部", "肩膀", "练肩", "肩"] },
   { muscle: "背", keywords: ["背部", "背阔", "练背", "背"] },
   { muscle: "臀腿", keywords: ["臀腿", "腿部", "下肢", "练腿", "臀", "腿"] }
 ];
 
-var voiceExerciseKeywordIndex = buildVoiceExerciseKeywordIndex();
-
-var wm = {
-  exercises: [],
-  exIdx: 0,
-  setDone: 0,
-  restTimer: null,
-  restEndTime: 0,
-  restTotal: 90,
-  sessionLog: [],
-  exDoneTimer: null,
-  summary: null,
-  startedAt: "",
-  finishedAt: ""
-};
+const voiceExerciseKeywordIndex = buildVoiceExerciseKeywordIndex();
 
 persistRecords();
 renderExercises();
@@ -289,7 +298,7 @@ updateLoadLastBtn();
 updateDraftBanner();
 
 document.getElementById("muscle-pills").addEventListener("click", function (e) {
-  var btn = e.target.closest(".pill");
+  const btn = e.target.closest(".pill");
   if (!btn) return;
   setMuscle(btn.dataset.value);
 });
@@ -305,7 +314,7 @@ document.getElementById("start-workout-btn").onclick = function () {
     showToast("已使用默认训练结构");
   }
 
-  var plan = collectExercisesForWorkout();
+  const plan = collectExercisesForWorkout();
   if (!plan.length) {
     showToast("当前部位还没有可用动作");
     return;
@@ -349,16 +358,16 @@ document.getElementById("voice-parse-btn").onclick = function () {
   parseVoicePlanInput();
 };
 document.getElementById("voice-import-btn").onclick = function () {
-  if (!voicePlan || !voicePlan.exercises || !voicePlan.exercises.length) {
+  if (!appState.voice.plan || !appState.voice.plan.exercises || !appState.voice.plan.exercises.length) {
     showToast("请先识别训练计划");
     return;
   }
-  applyPlanToEditor(voicePlan.muscle, voicePlan.exercises, true);
+  applyPlanToEditor(appState.voice.plan.muscle, appState.voice.plan.exercises, true);
   closeVoiceModal();
   showToast("训练计划已导入");
 };
 document.getElementById("voice-reset-btn").onclick = function () {
-  voicePlan = null;
+  appState.voice.plan = null;
   resetVoiceResultView();
   setVoiceStatus(getVoiceSupportMessage());
 };
@@ -368,41 +377,41 @@ document.getElementById("progress-exercise-select").addEventListener("change", f
 });
 
 document.getElementById("export-btn").onclick = function () {
-  var data = {
+  const data = {
     version: 2,
     exportedAt: new Date().toISOString(),
-    records: records
+    records: appState.data.records
   };
-  var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement("a");
-  a.href = url;
-  a.download = "training-" + getTodayStr() + ".json";
-  a.click();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "training-" + getTodayStr() + ".json";
+  link.click();
   URL.revokeObjectURL(url);
 };
 
 document.getElementById("import-file").onchange = function (e) {
-  var file = e.target.files[0];
+  const file = e.target.files[0];
   if (!file) return;
 
-  var reader = new FileReader();
+  const reader = new FileReader();
   reader.onload = function (ev) {
     try {
-      var parsed = JSON.parse(ev.target.result);
-      var incoming = Array.isArray(parsed) ? parsed : parsed.records;
-      var normalized = sanitizeRecords(incoming || []);
-      var existing = {};
-      var added = 0;
+      const parsed = JSON.parse(ev.target.result);
+      const incoming = Array.isArray(parsed) ? parsed : parsed.records;
+      const normalized = sanitizeRecords(incoming || []);
+      const existing = {};
+      let added = 0;
 
-      records.forEach(function (record) {
+      appState.data.records.forEach(function (record) {
         existing[getRecordKey(record)] = true;
       });
 
       normalized.forEach(function (record) {
-        var key = getRecordKey(record);
+        const key = getRecordKey(record);
         if (existing[key]) return;
-        records.push(record);
+        appState.data.records.push(record);
         existing[key] = true;
         added++;
       });
@@ -427,9 +436,9 @@ document.getElementById("compare-modal").onclick = function (e) {
 };
 
 document.getElementById("wm-exit-btn").onclick = function () {
-  clearInterval(wm.restTimer);
-  clearTimeout(wm.exDoneTimer);
-  wm.restEndTime = 0;
+  clearInterval(appState.workout.restTimer);
+  clearTimeout(appState.workout.exDoneTimer);
+  appState.workout.restEndTime = 0;
 
   if (hasWorkoutProgress()) {
     saveDraft();
@@ -440,24 +449,24 @@ document.getElementById("wm-exit-btn").onclick = function () {
 };
 
 document.getElementById("wm-done-btn").onclick = function () {
-  var exercise = wm.exercises[wm.exIdx];
-  var actualWeight = document.getElementById("wm-input-weight").value || exercise.weight;
-  var actualReps = document.getElementById("wm-input-reps").value || getRepInputValue(exercise.reps);
-  var restSecs = parseInt(document.getElementById("wm-input-rest").value, 10) || parseInt(exercise.rest, 10) || 90;
+  const exercise = appState.workout.exercises[appState.workout.exIdx];
+  const actualWeight = document.getElementById("wm-input-weight").value || exercise.weight;
+  const actualReps = document.getElementById("wm-input-reps").value || getRepInputValue(exercise.reps);
+  const restSecs = parseInt(document.getElementById("wm-input-rest").value, 10) || parseInt(exercise.rest, 10) || 90;
 
-  wm.restTotal = restSecs;
-  wm.sessionLog[wm.exIdx].completedSets.push({
-    setNumber: wm.setDone + 1,
+  appState.workout.restTotal = restSecs;
+  appState.workout.sessionLog[appState.workout.exIdx].completedSets.push({
+    setNumber: appState.workout.setDone + 1,
     weight: actualWeight,
     reps: actualReps,
     restSeconds: restSecs
   });
 
-  wm.setDone++;
+  appState.workout.setDone++;
   wmAutoSave();
 
-  if (wm.setDone >= exercise.sets) {
-    clearInterval(wm.restTimer);
+  if (appState.workout.setDone >= exercise.sets) {
+    clearInterval(appState.workout.restTimer);
     wmShow("ex-done");
   } else {
     wmShow("resting");
@@ -465,14 +474,14 @@ document.getElementById("wm-done-btn").onclick = function () {
 };
 
 document.getElementById("wm-skip-btn").onclick = function () {
-  clearInterval(wm.restTimer);
-  wm.restEndTime = 0;
+  clearInterval(appState.workout.restTimer);
+  appState.workout.restEndTime = 0;
   wmShow("working");
 };
 
 document.getElementById("wm-extend-rest-btn").onclick = function () {
-  wm.restEndTime += 30000;
-  wm.restTotal += 30;
+  appState.workout.restEndTime += 30000;
+  appState.workout.restTotal += 30;
   wmTickRest();
 };
 
@@ -489,10 +498,10 @@ document.getElementById("wm-next-ex-btn").onclick = function () {
 };
 
 document.getElementById("wm-finish-btn").onclick = function () {
-  clearInterval(wm.restTimer);
-  clearTimeout(wm.exDoneTimer);
-  wm.restEndTime = 0;
-  wm.finishedAt = new Date().toISOString();
+  clearInterval(appState.workout.restTimer);
+  clearTimeout(appState.workout.exDoneTimer);
+  appState.workout.restEndTime = 0;
+  appState.workout.finishedAt = new Date().toISOString();
   wmAutoSave({ isFinal: true });
   clearDraft();
   document.getElementById("workout-overlay").style.display = "none";
@@ -500,21 +509,21 @@ document.getElementById("wm-finish-btn").onclick = function () {
 };
 
 document.addEventListener("visibilitychange", function () {
-  if (!document.hidden && wm.restEndTime > 0 && wm.restTimer) {
+  if (!document.hidden && appState.workout.restEndTime > 0 && appState.workout.restTimer) {
     wmTickRest();
   }
 });
 
 function setTodayHeader() {
-  var today = getTodayStr();
+  const today = getTodayStr();
   document.getElementById("today-date").textContent = today.replace(/-/g, " / ");
 }
 
 function getTodayStr() {
-  var now = new Date();
-  var yyyy = now.getFullYear();
-  var mm = String(now.getMonth() + 1).padStart(2, "0");
-  var dd = String(now.getDate()).padStart(2, "0");
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
   return yyyy + "-" + mm + "-" + dd;
 }
 
@@ -544,20 +553,20 @@ function normalizeRecord(record) {
   if (!record || typeof record !== "object") return null;
   if (!isLegacyGymRecord(record)) return null;
 
-  var date = typeof record.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(record.date)
+  const date = typeof record.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(record.date)
     ? record.date
     : getTodayStr();
-  var muscle = normalizeMuscle(record.muscle);
-  var plannedExercises = Array.isArray(record.plannedExercises)
+  const muscle = normalizeMuscle(record.muscle);
+  const plannedExercises = Array.isArray(record.plannedExercises)
     ? record.plannedExercises.map(normalizeExercise).filter(Boolean)
     : [];
-  var sessionLog = Array.isArray(record.sessionLog)
+  const sessionLog = Array.isArray(record.sessionLog)
     ? record.sessionLog.map(normalizeSessionLogItem).filter(Boolean)
     : [];
-  var exercises = Array.isArray(record.exercises)
+  const exercises = Array.isArray(record.exercises)
     ? record.exercises.map(normalizeExercise).filter(Boolean)
     : buildExercisesFromSessionLog(sessionLog);
-  var totalVolume = record.totalVolume === undefined || record.totalVolume === null || record.totalVolume === ""
+  const totalVolume = record.totalVolume === undefined || record.totalVolume === null || record.totalVolume === ""
     ? getSessionLogVolume(sessionLog)
     : Number(record.totalVolume) || 0;
 
@@ -619,7 +628,7 @@ function buildExercisesFromSessionLog(sessionLog) {
   return (sessionLog || []).filter(function (item) {
     return item.completedSets && item.completedSets.length;
   }).map(function (item) {
-    var lastSet = item.completedSets[item.completedSets.length - 1];
+    const lastSet = item.completedSets[item.completedSets.length - 1];
     return normalizeExercise({
       name: item.name,
       weight: lastSet.weight,
@@ -635,8 +644,8 @@ function buildExercisesFromSessionLog(sessionLog) {
 function getSessionLogVolume(sessionLog) {
   return (sessionLog || []).reduce(function (sum, item) {
     return sum + (item.completedSets || []).reduce(function (setSum, set) {
-      var weight = parseWeightNumber(set.weight);
-      var reps = parseInt(set.reps, 10) || 0;
+      const weight = parseWeightNumber(set.weight);
+      const reps = parseInt(set.reps, 10) || 0;
       if (weight === null || !reps) return setSum;
       return setSum + weight * reps;
     }, 0);
@@ -644,7 +653,7 @@ function getSessionLogVolume(sessionLog) {
 }
 
 function persistRecords() {
-  localStorage.setItem("records", JSON.stringify(records));
+  localStorage.setItem("records", JSON.stringify(appState.data.records));
 }
 
 function getRecordExercises(record) {
@@ -653,7 +662,7 @@ function getRecordExercises(record) {
 }
 
 function getRecordKey(record) {
-  var exerciseNames = getRecordExercises(record).map(function (exercise) {
+  const exerciseNames = getRecordExercises(record).map(function (exercise) {
     return exercise.name;
   }).join("/");
   return [record.date, record.muscle, exerciseNames].join("|");
@@ -662,7 +671,7 @@ function getRecordKey(record) {
 function buildContent(muscle, exercises) {
   if (!exercises || !exercises.length) return muscle + "训练";
   return muscle + "：" + exercises.map(function (exercise) {
-    var parts = [];
+    const parts = [];
     if (exercise.weight) parts.push(exercise.weight + "kg");
     if (exercise.sets) parts.push(exercise.sets + "组");
     if (exercise.reps) parts.push(exercise.reps + "次");
@@ -671,7 +680,7 @@ function buildContent(muscle, exercises) {
 }
 
 function setMuscle(value) {
-  var muscle = normalizeMuscle(value);
+  const muscle = normalizeMuscle(value);
   document.getElementById("muscle").value = muscle;
   document.querySelectorAll("#muscle-pills .pill").forEach(function (btn) {
     btn.classList.toggle("active", btn.dataset.value === muscle);
@@ -681,18 +690,18 @@ function setMuscle(value) {
 }
 
 function renderExercises() {
-  var muscle = getCurrentMuscle();
-  var list = document.getElementById("exercise-list");
+  const muscle = getCurrentMuscle();
+  const list = document.getElementById("exercise-list");
   list.innerHTML = "";
 
   exerciseLibrary[muscle].forEach(function (exercise) {
-    var row = document.createElement("div");
+    const row = document.createElement("div");
     row.className = "exercise-row";
 
-    var label = document.createElement("label");
+    const label = document.createElement("label");
     label.className = "ex-label";
 
-    var checkbox = document.createElement("input");
+    const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.value = exercise.name;
     checkbox.addEventListener("change", function () {
@@ -702,7 +711,7 @@ function renderExercises() {
     label.appendChild(checkbox);
     label.appendChild(document.createTextNode(exercise.name));
 
-    var details = document.createElement("div");
+    const details = document.createElement("div");
     details.className = "exercise-details";
     details.innerHTML =
       '<div class="ex-input-group"><span class="ex-input-label">KG</span><input type="number" class="input-weight" min="0"></div>' +
@@ -731,16 +740,16 @@ function hideExerciseSection() {
 }
 
 function updateLoadLastBtn() {
-  var btn = document.getElementById("load-last-btn");
-  var last = getLastRecord(getCurrentMuscle());
+  const btn = document.getElementById("load-last-btn");
+  const last = getLastRecord(getCurrentMuscle());
   if (!btn) return;
   btn.style.display = last ? "inline-flex" : "none";
 }
 
 function getLastRecord(muscle) {
-  for (var i = records.length - 1; i >= 0; i--) {
-    if (records[i].muscle === muscle && getRecordExercises(records[i]).length) {
-      return records[i];
+  for (let i = appState.data.records.length - 1; i >= 0; i--) {
+    if (appState.data.records[i].muscle === muscle && getRecordExercises(appState.data.records[i]).length) {
+      return appState.data.records[i];
     }
   }
   return null;
@@ -749,13 +758,13 @@ function getLastRecord(muscle) {
 function applyPlanToEditor(muscle, plan, shouldShowSection) {
   setMuscle(muscle);
 
-  var planMap = {};
-  editorPlanMeta = {};
+  const planMap = {};
+  appState.composer.planMeta = {};
   (plan || []).forEach(function (exercise) {
-    var normalized = normalizeExercise(exercise);
+    const normalized = normalizeExercise(exercise);
     if (normalized) {
       planMap[normalized.name] = normalized;
-      editorPlanMeta[normalized.name] = {
+      appState.composer.planMeta[normalized.name] = {
         rest: exercise.rest || "",
         intensity: exercise.intensity || "",
         progression: exercise.progression || "",
@@ -765,8 +774,8 @@ function applyPlanToEditor(muscle, plan, shouldShowSection) {
   });
 
   document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
-    var checkbox = row.querySelector("input[type='checkbox']");
-    var selected = planMap[checkbox.value];
+    const checkbox = row.querySelector("input[type='checkbox']");
+    const selected = planMap[checkbox.value];
 
     checkbox.checked = !!selected;
     row.classList.toggle("is-checked", !!selected);
@@ -783,11 +792,11 @@ function hasSelectedExercises() {
 }
 
 function collectSelectedExercises() {
-  var selected = [];
+  const selected = [];
   document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
-    var checkbox = row.querySelector("input[type='checkbox']");
+    const checkbox = row.querySelector("input[type='checkbox']");
     if (!checkbox.checked) return;
-    var meta = editorPlanMeta[checkbox.value] || {};
+    const meta = appState.composer.planMeta[checkbox.value] || {};
     selected.push({
       name: checkbox.value,
       weight: row.querySelector(".input-weight").value,
@@ -819,21 +828,21 @@ function openBackfill(date) {
   document.getElementById("backfill-section").style.display = "flex";
   document.getElementById("backfill-open-btn").style.display = "none";
   document.getElementById("backfill-date").value = date || getYesterdayStr();
-  document.getElementById("backfill-save-btn").textContent = editingIndex >= 0 ? "保存修改" : "保存补录";
+  document.getElementById("backfill-save-btn").textContent = appState.composer.editingIndex >= 0 ? "保存修改" : "保存补录";
   showExerciseSection();
 }
 
 function getYesterdayStr() {
-  var date = new Date();
+  const date = new Date();
   date.setDate(date.getDate() - 1);
-  var yyyy = date.getFullYear();
-  var mm = String(date.getMonth() + 1).padStart(2, "0");
-  var dd = String(date.getDate()).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
   return yyyy + "-" + mm + "-" + dd;
 }
 
 function resetComposer() {
-  editingIndex = -1;
+  appState.composer.editingIndex = -1;
   document.getElementById("backfill-section").style.display = "none";
   document.getElementById("backfill-open-btn").style.display = "inline-block";
   document.getElementById("backfill-save-btn").textContent = "保存补录";
@@ -842,7 +851,7 @@ function resetComposer() {
 }
 
 function clearExerciseInputs() {
-  editorPlanMeta = {};
+  appState.composer.planMeta = {};
   document.querySelectorAll("#exercise-list .exercise-row").forEach(function (row) {
     row.classList.remove("is-checked");
     row.querySelectorAll("input").forEach(function (input) {
@@ -853,11 +862,11 @@ function clearExerciseInputs() {
 }
 
 function saveBackfillRecord() {
-  var date = document.getElementById("backfill-date").value;
-  var exercises = collectSelectedExercises();
-  var muscle = getCurrentMuscle();
-  var isEditing = editingIndex >= 0;
-  var record;
+  const date = document.getElementById("backfill-date").value;
+  const exercises = collectSelectedExercises();
+  const muscle = getCurrentMuscle();
+  const isEditing = appState.composer.editingIndex >= 0;
+  let record;
 
   if (!date) {
     showToast("请填写日期");
@@ -879,9 +888,9 @@ function saveBackfillRecord() {
   };
 
   if (isEditing) {
-    records[editingIndex] = record;
+    appState.data.records[appState.composer.editingIndex] = record;
   } else {
-    records.push(record);
+    appState.data.records.push(record);
   }
 
   persistRecords();
@@ -893,8 +902,8 @@ function saveBackfillRecord() {
 }
 
 function rebuildList() {
-  var list = document.getElementById("list");
-  var sorted = records.map(function (record, index) {
+  const list = document.getElementById("list");
+  const sorted = appState.data.records.map(function (record, index) {
     return { record: record, index: index };
   });
 
@@ -909,46 +918,46 @@ function rebuildList() {
 }
 
 function addToList(record, index) {
-  var recordExercises = getRecordExercises(record);
-  var li = document.createElement("li");
+  const recordExercises = getRecordExercises(record);
+  const li = document.createElement("li");
   li.className = "record-card";
   li.setAttribute("data-index", index);
 
-  var header = document.createElement("div");
+  const header = document.createElement("div");
   header.className = "card-header";
 
-  var headerLeft = document.createElement("div");
+  const headerLeft = document.createElement("div");
   headerLeft.className = "card-header-left";
 
-  var tag = document.createElement("span");
+  const tag = document.createElement("span");
   tag.className = "card-tag " + (muscleTagClass[record.muscle] || "muscle-chest");
   tag.textContent = record.muscle;
 
-  var date = document.createElement("span");
+  const date = document.createElement("span");
   date.className = "card-date";
   date.textContent = record.date;
 
-  var buttonGroup = document.createElement("div");
+  const buttonGroup = document.createElement("div");
   buttonGroup.className = "btn-group";
 
   if (recordExercises.length) {
-    var compareBtn = document.createElement("button");
+    const compareBtn = document.createElement("button");
     compareBtn.className = "cmp-btn";
     compareBtn.textContent = "对比上次";
     compareBtn.onclick = function () {
-      showCompare(records[index], index);
+      showCompare(appState.data.records[index], index);
     };
     buttonGroup.appendChild(compareBtn);
   }
 
-  var editBtn = document.createElement("button");
+  const editBtn = document.createElement("button");
   editBtn.className = "edit-btn";
   editBtn.textContent = "编辑";
   editBtn.onclick = function () {
     loadRecordToComposer(index);
   };
 
-  var deleteBtn = document.createElement("button");
+  const deleteBtn = document.createElement("button");
   deleteBtn.className = "del-btn";
   deleteBtn.textContent = "删除";
   deleteBtn.onclick = function () {
@@ -963,21 +972,21 @@ function addToList(record, index) {
   header.appendChild(headerLeft);
   header.appendChild(buttonGroup);
 
-  var body = document.createElement("div");
+  const body = document.createElement("div");
   body.className = "card-body";
 
   if (recordExercises.length) {
     recordExercises.forEach(function (exercise) {
-      var row = document.createElement("div");
+      const row = document.createElement("div");
       row.className = "card-ex-row";
 
-      var name = document.createElement("span");
+      const name = document.createElement("span");
       name.className = "card-ex-name";
       name.textContent = exercise.name;
 
-      var detail = document.createElement("span");
+      const detail = document.createElement("span");
       detail.className = "card-ex-detail";
-      var parts = [];
+      const parts = [];
       if (exercise.weight) parts.push(exercise.weight + " kg");
       if (exercise.sets) parts.push(exercise.sets + " 组");
       if (exercise.reps) parts.push(exercise.reps + " 次");
@@ -988,7 +997,7 @@ function addToList(record, index) {
       body.appendChild(row);
     });
   } else {
-    var content = document.createElement("div");
+    const content = document.createElement("div");
     content.className = "card-content";
     content.textContent = record.content || "";
     body.appendChild(content);
@@ -1000,8 +1009,8 @@ function addToList(record, index) {
 }
 
 function loadRecordToComposer(index) {
-  var record = records[index];
-  editingIndex = index;
+  const record = appState.data.records[index];
+  appState.composer.editingIndex = index;
   setMuscle(record.muscle);
   openBackfill(record.date);
   applyPlanToEditor(record.muscle, record.plannedExercises && record.plannedExercises.length ? record.plannedExercises : getRecordExercises(record), true);
@@ -1009,13 +1018,13 @@ function loadRecordToComposer(index) {
 }
 
 function deleteRecord(index) {
-  if (editingIndex === index) {
+  if (appState.composer.editingIndex === index) {
     resetComposer();
-  } else if (editingIndex > index) {
-    editingIndex--;
+  } else if (appState.composer.editingIndex > index) {
+    appState.composer.editingIndex--;
   }
 
-  records.splice(index, 1);
+  appState.data.records.splice(index, 1);
   persistRecords();
   rebuildList();
   updateStats();
@@ -1023,28 +1032,28 @@ function deleteRecord(index) {
 }
 
 function updateStats() {
-  var today = parseDateString(getTodayStr());
-  var weekStart = new Date(today);
-  var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  var day = weekStart.getDay();
+  const today = parseDateString(getTodayStr());
+  const weekStart = new Date(today);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  let day = weekStart.getDay();
 
   if (day === 0) day = 7;
   weekStart.setDate(weekStart.getDate() - day + 1);
   weekStart.setHours(0, 0, 0, 0);
 
-  var weekCount = 0;
-  var monthCount = 0;
+  let weekCount = 0;
+  let monthCount = 0;
 
-  records.forEach(function (record) {
-    var date = parseDateString(record.date);
+  appState.data.records.forEach(function (record) {
+    const date = parseDateString(record.date);
     if (date >= weekStart) weekCount++;
     if (date >= monthStart) monthCount++;
   });
 
-  document.getElementById("total").textContent = records.length;
+  document.getElementById("total").textContent = appState.data.records.length;
   document.getElementById("count-week").textContent = weekCount;
   document.getElementById("count-month").textContent = monthCount;
-  document.getElementById("record-count").textContent = records.length + " 条";
+  document.getElementById("record-count").textContent = appState.data.records.length + " 条";
   renderProgressPanel();
 }
 
@@ -1054,24 +1063,24 @@ function formatShortDate(dateStr) {
 }
 
 function getExerciseSessionData(record, exerciseName) {
-  var normalizedName = normalizeExerciseName(exerciseName);
-  var sessionLog = record.sessionLog || [];
+  const normalizedName = normalizeExerciseName(exerciseName);
+  const sessionLog = record.sessionLog || [];
 
-  for (var i = 0; i < sessionLog.length; i++) {
-    var item = sessionLog[i];
+  for (let i = 0; i < sessionLog.length; i++) {
+    const item = sessionLog[i];
     if (normalizeExerciseName(item.name) !== normalizedName) continue;
     if (!item.completedSets || !item.completedSets.length) return null;
 
     return {
       date: record.date,
       weight: item.completedSets.reduce(function (maxWeight, set) {
-        var weight = parseWeightNumber(set.weight);
+        const weight = parseWeightNumber(set.weight);
         if (weight === null) return maxWeight;
         return Math.max(maxWeight, weight);
       }, 0),
       volume: item.completedSets.reduce(function (sum, set) {
-        var weight = parseWeightNumber(set.weight);
-        var reps = parseInt(set.reps, 10) || 0;
+        const weight = parseWeightNumber(set.weight);
+        const reps = parseInt(set.reps, 10) || 0;
         if (weight === null || !reps) return sum;
         return sum + weight * reps;
       }, 0),
@@ -1083,16 +1092,16 @@ function getExerciseSessionData(record, exerciseName) {
 }
 
 function getExerciseSummaryData(record, exerciseName) {
-  var normalizedName = normalizeExerciseName(exerciseName);
-  var exercises = getRecordExercises(record);
+  const normalizedName = normalizeExerciseName(exerciseName);
+  const exercises = getRecordExercises(record);
 
-  for (var i = 0; i < exercises.length; i++) {
-    var exercise = exercises[i];
+  for (let i = 0; i < exercises.length; i++) {
+    const exercise = exercises[i];
     if (normalizeExerciseName(exercise.name) !== normalizedName) continue;
 
-    var weight = parseWeightNumber(exercise.weight);
-    var sets = parseInt(exercise.sets, 10) || 0;
-    var reps = parseInt(getRepInputValue(exercise.reps), 10) || 0;
+    const weight = parseWeightNumber(exercise.weight);
+    const sets = parseInt(exercise.sets, 10) || 0;
+    const reps = parseInt(getRepInputValue(exercise.reps), 10) || 0;
 
     return {
       date: record.date,
@@ -1106,13 +1115,13 @@ function getExerciseSummaryData(record, exerciseName) {
 }
 
 function getExerciseTrendData(exerciseName, limit) {
-  var data = [];
-  var sorted = records.slice().sort(function (a, b) {
+  const data = [];
+  const sorted = appState.data.records.slice().sort(function (a, b) {
     return parseDateString(a.date).getTime() - parseDateString(b.date).getTime();
   });
 
   sorted.forEach(function (record) {
-    var point = getExerciseSessionData(record, exerciseName) || getExerciseSummaryData(record, exerciseName);
+    const point = getExerciseSessionData(record, exerciseName) || getExerciseSummaryData(record, exerciseName);
     if (point) data.push(point);
   });
 
@@ -1120,12 +1129,12 @@ function getExerciseTrendData(exerciseName, limit) {
 }
 
 function getTrackedExerciseNames() {
-  var seen = {};
-  var names = [];
+  const seen = {};
+  const names = [];
 
-  for (var i = records.length - 1; i >= 0; i--) {
-    getRecordExercises(records[i]).forEach(function (exercise) {
-      var name = normalizeExerciseName(exercise.name);
+  for (let i = appState.data.records.length - 1; i >= 0; i--) {
+    getRecordExercises(appState.data.records[i]).forEach(function (exercise) {
+      const name = normalizeExerciseName(exercise.name);
       if (seen[name]) return;
       seen[name] = true;
       names.push(name);
@@ -1136,37 +1145,61 @@ function getTrackedExerciseNames() {
 }
 
 function renderTrendChart(containerId, data, metric, variant) {
-  var container = document.getElementById(containerId);
-  var max = data.reduce(function (currentMax, item) {
+  const container = document.getElementById(containerId);
+  const max = data.reduce(function (currentMax, item) {
     return Math.max(currentMax, item[metric] || 0);
   }, 0);
+  let bars;
+
+  clearNode(container);
 
   if (!data.length) {
-    container.innerHTML = '<div class="trend-empty">还没有足够的训练数据</div>';
+    const empty = document.createElement("div");
+    empty.className = "trend-empty";
+    empty.textContent = "还没有足够的训练数据";
+    container.appendChild(empty);
     return;
   }
 
-  container.innerHTML = '<div class="trend-bars">' + data.map(function (item) {
-    var height = max ? Math.max(14, Math.round((item[metric] || 0) / max * 120)) : 14;
-    var valueText = metric === "weight"
+  bars = document.createElement("div");
+  bars.className = "trend-bars";
+
+  data.forEach(function (item) {
+    const col = document.createElement("div");
+    const value = document.createElement("div");
+    const wrap = document.createElement("div");
+    const bar = document.createElement("div");
+    const label = document.createElement("div");
+    const height = max ? Math.max(14, Math.round((item[metric] || 0) / max * 120)) : 14;
+    const valueText = metric === "weight"
       ? formatWeightValue(item.weight) + "kg"
       : formatWeightValue(item.volume) + "kg";
 
-    return '' +
-      '<div class="trend-col">' +
-        '<div class="trend-value">' + valueText + '</div>' +
-        '<div class="trend-bar-wrap"><div class="trend-bar ' + variant + '" style="height:' + height + 'px"></div></div>' +
-        '<div class="trend-label">' + formatShortDate(item.date) + '</div>' +
-      '</div>';
-  }).join("") + '</div>';
+    col.className = "trend-col";
+    value.className = "trend-value";
+    value.textContent = valueText;
+    wrap.className = "trend-bar-wrap";
+    bar.className = "trend-bar " + variant;
+    bar.style.height = height + "px";
+    label.className = "trend-label";
+    label.textContent = formatShortDate(item.date);
+
+    wrap.appendChild(bar);
+    col.appendChild(value);
+    col.appendChild(wrap);
+    col.appendChild(label);
+    bars.appendChild(col);
+  });
+
+  container.appendChild(bars);
 }
 
 function getMuscleFrequencyData(days) {
-  var cutoff = parseDateString(getTodayStr());
-  var counts = { 胸: 0, 肩: 0, 背: 0, 臀腿: 0 };
+  const cutoff = parseDateString(getTodayStr());
+  const counts = { 胸: 0, 肩: 0, 背: 0, 臀腿: 0 };
   cutoff.setDate(cutoff.getDate() - (days - 1));
 
-  records.forEach(function (record) {
+  appState.data.records.forEach(function (record) {
     if (parseDateString(record.date) < cutoff) return;
     if (!getRecordExercises(record).length) return;
     counts[normalizeMuscle(record.muscle)]++;
@@ -1178,36 +1211,72 @@ function getMuscleFrequencyData(days) {
 }
 
 function renderFrequencyList() {
-  var list = document.getElementById("progress-frequency-list");
-  var data = getMuscleFrequencyData(28);
-  var max = data.reduce(function (currentMax, item) {
+  const list = document.getElementById("progress-frequency-list");
+  const data = getMuscleFrequencyData(28);
+  const max = data.reduce(function (currentMax, item) {
     return Math.max(currentMax, item.count);
   }, 0);
 
-  list.innerHTML = data.map(function (item) {
-    var width = max ? Math.max(8, Math.round(item.count / max * 100)) : 0;
-    return '' +
-      '<div class="frequency-row">' +
-        '<span class="frequency-name">' + item.muscle + '</span>' +
-        '<div class="frequency-track"><div class="frequency-fill" style="width:' + width + '%"></div></div>' +
-        '<span class="frequency-count">' + item.count + ' 次</span>' +
-      '</div>';
-  }).join("");
+  clearNode(list);
+
+  data.forEach(function (item) {
+    const row = document.createElement("div");
+    const name = document.createElement("span");
+    const track = document.createElement("div");
+    const fill = document.createElement("div");
+    const count = document.createElement("span");
+    const width = max ? Math.max(8, Math.round(item.count / max * 100)) : 0;
+
+    row.className = "frequency-row";
+    name.className = "frequency-name";
+    name.textContent = item.muscle;
+    track.className = "frequency-track";
+    fill.className = "frequency-fill";
+    fill.style.width = width + "%";
+    count.className = "frequency-count";
+    count.textContent = item.count + " 次";
+
+    track.appendChild(fill);
+    row.appendChild(name);
+    row.appendChild(track);
+    row.appendChild(count);
+    list.appendChild(row);
+  });
+}
+
+function renderProgressSelectOptions(select, names, currentValue) {
+  clearNode(select);
+
+  if (!names.length) {
+    const emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = "暂无动作数据";
+    select.appendChild(emptyOption);
+    return "";
+  }
+
+  names.forEach(function (name) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+  });
+
+  return names.indexOf(currentValue) >= 0 ? currentValue : names[0];
 }
 
 function renderProgressPanel() {
-  var select = document.getElementById("progress-exercise-select");
-  var names = getTrackedExerciseNames();
-  var currentValue;
-  var data;
-  var latest;
-  var bestWeight;
+  const select = document.getElementById("progress-exercise-select");
+  const names = getTrackedExerciseNames();
+  let currentValue;
+  let data;
+  let latest;
+  let bestWeight;
 
   if (!select) return;
-  currentValue = select.value;
+  currentValue = renderProgressSelectOptions(select, names, select.value);
 
   if (!names.length) {
-    select.innerHTML = '<option value="">暂无动作数据</option>';
     document.getElementById("progress-latest-weight").textContent = "-";
     document.getElementById("progress-best-weight").textContent = "-";
     document.getElementById("progress-latest-volume").textContent = "-";
@@ -1217,11 +1286,7 @@ function renderProgressPanel() {
     return;
   }
 
-  select.innerHTML = names.map(function (name) {
-    return '<option value="' + name + '">' + name + '</option>';
-  }).join("");
-
-  select.value = names.indexOf(currentValue) >= 0 ? currentValue : names[0];
+  select.value = currentValue;
   data = getExerciseTrendData(select.value, 8);
   latest = data.length ? data[data.length - 1] : null;
   bestWeight = data.reduce(function (maxWeight, item) {
@@ -1241,11 +1306,11 @@ function renderProgressPanel() {
 }
 
 function findExerciseDefinition(name) {
-  var normalizedName = normalizeExerciseName(name);
-  var muscles = Object.keys(exerciseLibrary);
+  const normalizedName = normalizeExerciseName(name);
+  const muscles = Object.keys(exerciseLibrary);
 
-  for (var i = 0; i < muscles.length; i++) {
-    var match = exerciseLibrary[muscles[i]].find(function (exercise) {
+  for (let i = 0; i < muscles.length; i++) {
+    const match = exerciseLibrary[muscles[i]].find(function (exercise) {
       return exercise.name === normalizedName;
     });
     if (match) return match;
@@ -1256,7 +1321,7 @@ function findExerciseDefinition(name) {
 
 function parseWeightNumber(value) {
   if (value === undefined || value === null || value === "") return null;
-  var parsed = parseFloat(value);
+  const parsed = parseFloat(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -1269,7 +1334,7 @@ function formatWeightValue(value) {
 
 function toRepRange(value) {
   if (typeof value === "string" && value.indexOf("-") >= 0) return value;
-  var reps = parseInt(value, 10);
+  const reps = parseInt(value, 10);
   if (!reps) return "";
   if (reps <= 10) return reps + "-" + (reps + 2);
   if (reps <= 12) return reps + "-" + (reps + 3);
@@ -1278,16 +1343,16 @@ function toRepRange(value) {
 
 function getRepInputValue(repsRange) {
   if (repsRange === undefined || repsRange === null) return "";
-  var range = String(repsRange);
+  const range = String(repsRange);
   if (range.indexOf("-") === -1) return range;
   return range.split("-")[0];
 }
 
 function parseRepRange(value) {
-  var range = String(value || "");
-  var parts;
-  var low;
-  var high;
+  const range = String(value || "");
+  let parts;
+  let low;
+  let high;
 
   if (!range) return { low: 0, high: 0 };
   if (range.indexOf("-") === -1) {
@@ -1302,12 +1367,12 @@ function parseRepRange(value) {
 }
 
 function getLastWorkoutByMuscle(muscle, options) {
-  var targetMuscle = normalizeMuscle(muscle);
-  var shouldExcludeCurrentSession = options && options.excludeCurrentSession;
-  var today = getTodayStr();
+  const targetMuscle = normalizeMuscle(muscle);
+  const shouldExcludeCurrentSession = options && options.excludeCurrentSession;
+  const today = getTodayStr();
 
-  for (var i = records.length - 1; i >= 0; i--) {
-    var record = records[i];
+  for (let i = appState.data.records.length - 1; i >= 0; i--) {
+    const record = appState.data.records[i];
     if (record.muscle !== targetMuscle || !getRecordExercises(record).length) continue;
     if (shouldExcludeCurrentSession && record._wmSession && record.date === today && record.muscle === targetMuscle) continue;
     return record;
@@ -1317,21 +1382,21 @@ function getLastWorkoutByMuscle(muscle, options) {
 }
 
 function getExerciseHistory(exerciseName, limit, options) {
-  var history = [];
-  var normalizedName = normalizeExerciseName(exerciseName);
-  var targetMuscle = options && options.muscle ? normalizeMuscle(options.muscle) : "";
-  var shouldExcludeCurrentSession = options && options.excludeCurrentSession;
-  var today = getTodayStr();
+  const history = [];
+  const normalizedName = normalizeExerciseName(exerciseName);
+  const targetMuscle = options && options.muscle ? normalizeMuscle(options.muscle) : "";
+  const shouldExcludeCurrentSession = options && options.excludeCurrentSession;
+  const today = getTodayStr();
 
-  for (var i = records.length - 1; i >= 0; i--) {
-    var record = records[i];
-    var exercises = getRecordExercises(record);
+  for (let i = appState.data.records.length - 1; i >= 0; i--) {
+    const record = appState.data.records[i];
+    const exercises = getRecordExercises(record);
 
     if (targetMuscle && record.muscle !== targetMuscle) continue;
     if (shouldExcludeCurrentSession && record._wmSession && record.date === today && (!targetMuscle || record.muscle === targetMuscle)) continue;
 
-    for (var j = 0; j < exercises.length; j++) {
-      var exercise = exercises[j];
+    for (let j = 0; j < exercises.length; j++) {
+      const exercise = exercises[j];
       if (normalizeExerciseName(exercise.name) !== normalizedName) continue;
       history.push({
         name: normalizedName,
@@ -1354,17 +1419,17 @@ function getExerciseHistory(exerciseName, limit, options) {
 }
 
 function getLastExerciseData(exerciseName, options) {
-  var history = getExerciseHistory(exerciseName, 1, options);
+  const history = getExerciseHistory(exerciseName, 1, options);
   return history.length ? history[0] : null;
 }
 
 function getHistoryWeight(name) {
-  var last = getLastExerciseData(name);
+  const last = getLastExerciseData(name);
   return last ? last.weightNum : null;
 }
 
 function getDefaultInitialWeight(template) {
-  var baseWeight = parseWeightNumber(template.weight);
+  const baseWeight = parseWeightNumber(template.weight);
   return baseWeight === null ? "" : formatWeightValue(baseWeight);
 }
 
@@ -1376,7 +1441,7 @@ function getAiIntensity(goal, status) {
 }
 
 function getAiRestSeconds(exerciseName, goal, status) {
-  var exercise = findExerciseDefinition(exerciseName);
+  const exercise = findExerciseDefinition(exerciseName);
   if (!exercise) return goal === "增肌" ? 90 : 75;
   if (exercise.type === "复合") {
     if (status === "reduce") return 120;
@@ -1386,7 +1451,7 @@ function getAiRestSeconds(exerciseName, goal, status) {
 }
 
 function getWeightStep(exerciseName) {
-  var exercise = findExerciseDefinition(exerciseName);
+  const exercise = findExerciseDefinition(exerciseName);
   if (!exercise) return 2.5;
   if (exercise.equipment === "杠铃") return 2.5;
   if (exercise.equipment === "哑铃") return 2;
@@ -1395,9 +1460,9 @@ function getWeightStep(exerciseName) {
 }
 
 function bumpWeight(weight, exerciseName, factor) {
-  var step = getWeightStep(exerciseName);
-  var next = weight * factor;
-  var rounded;
+  const step = getWeightStep(exerciseName);
+  const next = weight * factor;
+  let rounded;
   if (!step) return next;
   rounded = Math.round(next / step) * step;
   if (factor > 1 && rounded <= weight) return weight + step;
@@ -1406,8 +1471,8 @@ function bumpWeight(weight, exerciseName, factor) {
 }
 
 function getProgressionHint(exerciseName, status, baseWeight) {
-  var exercise = findExerciseDefinition(exerciseName);
-  var nextWeight;
+  const exercise = findExerciseDefinition(exerciseName);
+  let nextWeight;
   if (exercise && exercise.equipment === "徒手") {
     return "如果全部完成，下次先增加 1-2 次，或增加轻负重。";
   }
@@ -1432,14 +1497,14 @@ function getExerciseOutcome(lastExercise, repRange, targetSets) {
 }
 
 function getAiWeightSuggestion(template, goal, lastExercise, recentHistory, repRange, targetSets) {
-  var baseWeight = lastExercise && lastExercise.weightNum !== null
+  const baseWeight = lastExercise && lastExercise.weightNum !== null
     ? lastExercise.weightNum
     : parseWeightNumber(template.weight);
-  var outcome = getExerciseOutcome(lastExercise, repRange, targetSets);
-  var allStableRecent = recentHistory.length >= 4 && recentHistory.slice(0, 4).every(function (item) {
+  let outcome = getExerciseOutcome(lastExercise, repRange, targetSets);
+  const allStableRecent = recentHistory.length >= 4 && recentHistory.slice(0, 4).every(function (item) {
     return item.setsNum >= targetSets && item.repsNum >= repRange.low;
   });
-  var nextWeight = baseWeight;
+  let nextWeight = baseWeight;
 
   if (baseWeight === null) {
     return {
@@ -1466,13 +1531,13 @@ function getAiWeightSuggestion(template, goal, lastExercise, recentHistory, repR
 }
 
 function buildAiExercise(template, goal, lastWorkoutMap) {
-  var normalizedName = normalizeExerciseName(template.name);
-  var lastWorkoutExercise = lastWorkoutMap[normalizedName] || null;
-  var lastExercise = getLastExerciseData(normalizedName) || lastWorkoutExercise;
-  var targetSets = parseInt(template.sets, 10) || (lastWorkoutExercise ? parseInt(lastWorkoutExercise.sets, 10) : 0) || 3;
-  var repRange = parseRepRange(toRepRange(template.reps || (lastWorkoutExercise ? lastWorkoutExercise.reps : "")));
-  var recentHistory = getExerciseHistory(normalizedName, 4);
-  var weightSuggestion = getAiWeightSuggestion(template, goal, lastExercise, recentHistory, repRange, targetSets);
+  const normalizedName = normalizeExerciseName(template.name);
+  const lastWorkoutExercise = lastWorkoutMap[normalizedName] || null;
+  const lastExercise = getLastExerciseData(normalizedName) || lastWorkoutExercise;
+  const targetSets = parseInt(template.sets, 10) || (lastWorkoutExercise ? parseInt(lastWorkoutExercise.sets, 10) : 0) || 3;
+  const repRange = parseRepRange(toRepRange(template.reps || (lastWorkoutExercise ? lastWorkoutExercise.reps : "")));
+  const recentHistory = getExerciseHistory(normalizedName, 4);
+  const weightSuggestion = getAiWeightSuggestion(template, goal, lastExercise, recentHistory, repRange, targetSets);
 
   return {
     name: normalizedName,
@@ -1486,10 +1551,10 @@ function buildAiExercise(template, goal, lastWorkoutMap) {
 }
 
 function buildAiPlan(muscle, goal, duration) {
-  var normalizedMuscle = normalizeMuscle(muscle);
-  var basePlan = (mockPlans[normalizedMuscle] && mockPlans[normalizedMuscle][goal]) || defaultPlans[normalizedMuscle] || [];
-  var lastWorkout = getLastWorkoutByMuscle(normalizedMuscle);
-  var lastWorkoutMap = {};
+  const normalizedMuscle = normalizeMuscle(muscle);
+  const basePlan = (mockPlans[normalizedMuscle] && mockPlans[normalizedMuscle][goal]) || defaultPlans[normalizedMuscle] || [];
+  const lastWorkout = getLastWorkoutByMuscle(normalizedMuscle);
+  const lastWorkoutMap = {};
 
   if (lastWorkout && lastWorkout.exercises) {
     lastWorkout.exercises.forEach(function (exercise) {
@@ -1509,7 +1574,7 @@ function buildAiPlan(muscle, goal, duration) {
 }
 
 function buildVoiceExerciseKeywordIndex() {
-  var keywordMap = {};
+  const keywordMap = {};
 
   Object.keys(exerciseLibrary).forEach(function (muscle) {
     exerciseLibrary[muscle].forEach(function (exercise) {
@@ -1558,7 +1623,7 @@ function resetVoiceResultView() {
 }
 
 function openVoiceModal() {
-  voicePlan = null;
+  appState.voice.plan = null;
   resetVoiceResultView();
   setVoiceStatus(getVoiceSupportMessage());
   document.getElementById("voice-modal").style.display = "flex";
@@ -1570,26 +1635,26 @@ function closeVoiceModal() {
 }
 
 function ensureVoiceRecognition() {
-  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Recognition) return null;
-  if (voiceRecognition) return voiceRecognition;
+  if (appState.voice.recognition) return appState.voice.recognition;
 
-  voiceRecognition = new Recognition();
-  voiceRecognition.lang = "zh-CN";
-  voiceRecognition.continuous = true;
-  voiceRecognition.interimResults = true;
+  appState.voice.recognition = new Recognition();
+  appState.voice.recognition.lang = "zh-CN";
+  appState.voice.recognition.continuous = true;
+  appState.voice.recognition.interimResults = true;
 
-  voiceRecognition.onstart = function () {
-    voiceIsListening = true;
+  appState.voice.recognition.onstart = function () {
+    appState.voice.isListening = true;
     setVoiceStatus("正在听写，请继续说完整的训练计划。");
   };
 
-  voiceRecognition.onresult = function (event) {
-    var finalText = "";
-    var interimText = "";
-    var input = document.getElementById("voice-input");
+  appState.voice.recognition.onresult = function (event) {
+    let finalText = "";
+    let interimText = "";
+    const input = document.getElementById("voice-input");
 
-    for (var i = event.resultIndex; i < event.results.length; i++) {
+    for (let i = event.resultIndex; i < event.results.length; i++) {
       if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
       else interimText += event.results[i][0].transcript;
     }
@@ -1602,29 +1667,29 @@ function ensureVoiceRecognition() {
     }
   };
 
-  voiceRecognition.onerror = function (event) {
-    voiceIsListening = false;
+  appState.voice.recognition.onerror = function (event) {
+    appState.voice.isListening = false;
     setVoiceStatus("语音识别失败：" + (event.error || "请改用手动输入"));
   };
 
-  voiceRecognition.onend = function () {
-    voiceIsListening = false;
+  appState.voice.recognition.onend = function () {
+    appState.voice.isListening = false;
     if (document.getElementById("voice-modal").style.display === "flex") {
       setVoiceStatus(document.getElementById("voice-input").value.trim() ? "听写结束，可以识别训练计划了。" : getVoiceSupportMessage());
     }
   };
 
-  return voiceRecognition;
+  return appState.voice.recognition;
 }
 
 function startVoiceRecognition() {
-  var recognition = ensureVoiceRecognition();
+  const recognition = ensureVoiceRecognition();
   if (!recognition) {
     showToast("当前浏览器不支持语音识别");
     setVoiceStatus(getVoiceSupportMessage());
     return;
   }
-  if (voiceIsListening) return;
+  if (appState.voice.isListening) return;
   try {
     recognition.start();
   } catch (err) {
@@ -1633,13 +1698,13 @@ function startVoiceRecognition() {
 }
 
 function stopVoiceRecognition() {
-  if (!voiceRecognition || !voiceIsListening) return;
-  voiceRecognition.stop();
+  if (!appState.voice.recognition || !appState.voice.isListening) return;
+  appState.voice.recognition.stop();
 }
 
 function normalizeVoiceTranscript(rawText) {
-  var text = String(rawText || "");
-  var replacements = [
+  let text = String(rawText || "");
+  const replacements = [
     [/公斤|千克/g, "kg"],
     [/公 斤/g, "kg"],
     [/ＫＧ|Kg/g, "kg"],
@@ -1661,10 +1726,10 @@ function normalizeVoiceTranscript(rawText) {
 }
 
 function parseVoiceNumberToken(token) {
-  var digitMap = { "零": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9 };
-  var parts;
-  var left;
-  var right;
+  const digitMap = { "零": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9 };
+  let parts;
+  let left;
+  let right;
 
   if (!token) return 0;
   token = String(token).replace(/两/g, "二").trim();
@@ -1681,7 +1746,7 @@ function parseVoiceNumberToken(token) {
 }
 
 function getVoiceMuscleFromExercise(name) {
-  var exercise = findExerciseDefinition(name);
+  const exercise = findExerciseDefinition(name);
   if (!exercise) return "";
   if (exercise.muscle_primary === "肩后束") return "肩";
   if (exercise.muscle_primary === "二头") return "背";
@@ -1691,8 +1756,8 @@ function getVoiceMuscleFromExercise(name) {
 }
 
 function parseVoiceMuscle(text) {
-  for (var i = 0; i < voiceMuscleKeywords.length; i++) {
-    for (var j = 0; j < voiceMuscleKeywords[i].keywords.length; j++) {
+  for (let i = 0; i < voiceMuscleKeywords.length; i++) {
+    for (let j = 0; j < voiceMuscleKeywords[i].keywords.length; j++) {
       if (text.indexOf(voiceMuscleKeywords[i].keywords[j]) > -1) return voiceMuscleKeywords[i].muscle;
     }
   }
@@ -1700,8 +1765,8 @@ function parseVoiceMuscle(text) {
 }
 
 function getLastWorkoutExerciseMap(muscle) {
-  var lastWorkout = getLastWorkoutByMuscle(muscle);
-  var map = {};
+  const lastWorkout = getLastWorkoutByMuscle(muscle);
+  const map = {};
 
   if (!lastWorkout || !lastWorkout.exercises) return map;
   lastWorkout.exercises.forEach(function (exercise) {
@@ -1711,19 +1776,19 @@ function getLastWorkoutExerciseMap(muscle) {
 }
 
 function getVoiceDefaultRepRange(name) {
-  var exercise = findExerciseDefinition(name);
+  const exercise = findExerciseDefinition(name);
   if (!exercise) return "8-12";
   if (exercise.type === "复合") return "6-10";
   return "10-15";
 }
 
 function getVoiceDefaultSets(name) {
-  var exercise = findExerciseDefinition(name);
+  const exercise = findExerciseDefinition(name);
   return exercise && exercise.type === "复合" ? "4" : "3";
 }
 
 function getVoiceDefaultWeight(name) {
-  var exercise = findExerciseDefinition(name);
+  const exercise = findExerciseDefinition(name);
   if (!exercise) return "";
   if (exercise.equipment === "徒手") return "0";
   if (exercise.equipment === "杠铃") return exercise.type === "复合" ? "40" : "20";
@@ -1734,11 +1799,11 @@ function getVoiceDefaultWeight(name) {
 }
 
 function getVoiceTemplateForExercise(name, muscle) {
-  var normalizedName = normalizeExerciseName(name);
-  var plan = defaultPlans[muscle] || [];
-  var last = getLastExerciseData(normalizedName, { muscle: muscle });
+  const normalizedName = normalizeExerciseName(name);
+  const plan = defaultPlans[muscle] || [];
+  const last = getLastExerciseData(normalizedName, { muscle: muscle });
 
-  for (var i = 0; i < plan.length; i++) {
+  for (let i = 0; i < plan.length; i++) {
     if (normalizeExerciseName(plan[i].name) === normalizedName) return normalizeExercise(plan[i]);
   }
 
@@ -1760,7 +1825,7 @@ function getVoiceTemplateForExercise(name, muscle) {
 }
 
 function matchVoiceExerciseName(segment) {
-  var matches = findVoiceExerciseMatches(segment);
+  const matches = findVoiceExerciseMatches(segment);
   if (matches.length) return matches[0].name;
   return "";
 }
@@ -1772,12 +1837,12 @@ function extractVoiceSegments(text) {
 }
 
 function findVoiceExerciseMatches(text) {
-  var rawMatches = [];
-  var pickedRanges = [];
-  var pickedNames = {};
+  const rawMatches = [];
+  const pickedRanges = [];
+  const pickedNames = {};
 
   voiceExerciseKeywordIndex.forEach(function (entry) {
-    var index = text.indexOf(entry.keyword);
+    const index = text.indexOf(entry.keyword);
     if (index === -1) return;
     rawMatches.push({
       index: index,
@@ -1793,7 +1858,7 @@ function findVoiceExerciseMatches(text) {
   });
 
   return rawMatches.filter(function (match) {
-    var overlaps = pickedRanges.some(function (range) {
+    const overlaps = pickedRanges.some(function (range) {
       return match.index < range.end && match.end > range.start;
     });
     if (overlaps || pickedNames[match.name]) return false;
@@ -1804,14 +1869,14 @@ function findVoiceExerciseMatches(text) {
 }
 
 function parseVoiceExerciseOverrides(segment) {
-  var setsMatch = segment.match(/([零一二三四五六七八九十两\d]+)\s*组/);
-  var repsRangeMatch = segment.match(/([零一二三四五六七八九十两\d]+)\s*(?:到|至|-|~)\s*([零一二三四五六七八九十两\d]+)\s*次/);
-  var repsMatch = segment.match(/([零一二三四五六七八九十两\d]+)\s*次/);
-  var weightMatch = segment.match(/(\d+(?:\.\d+)?)\s*(?:kg|KG|公斤|千克)/);
-  var restMatch = segment.match(/休息\s*([零一二三四五六七八九十两\d]+)\s*(秒|分钟|分)/);
-  var intensityMatch = segment.match(/RPE\s*([\d.]+)/i);
-  var restValue = 0;
-  var intensity = "";
+  const setsMatch = segment.match(/([零一二三四五六七八九十两\d]+)\s*组/);
+  const repsRangeMatch = segment.match(/([零一二三四五六七八九十两\d]+)\s*(?:到|至|-|~)\s*([零一二三四五六七八九十两\d]+)\s*次/);
+  const repsMatch = segment.match(/([零一二三四五六七八九十两\d]+)\s*次/);
+  const weightMatch = segment.match(/(\d+(?:\.\d+)?)\s*(?:kg|KG|公斤|千克)/);
+  const restMatch = segment.match(/休息\s*([零一二三四五六七八九十两\d]+)\s*(秒|分钟|分)/);
+  const intensityMatch = segment.match(/RPE\s*([\d.]+)/i);
+  let restValue = 0;
+  let intensity = "";
 
   if (restMatch) {
     restValue = parseVoiceNumberToken(restMatch[1]);
@@ -1834,8 +1899,8 @@ function parseVoiceExerciseOverrides(segment) {
 }
 
 function buildVoiceExercisePlan(name, muscle, overrides) {
-  var template = getVoiceTemplateForExercise(name, muscle);
-  var personalized = buildAiExercise(template, "增肌", getLastWorkoutExerciseMap(muscle));
+  const template = getVoiceTemplateForExercise(name, muscle);
+  const personalized = buildAiExercise(template, "增肌", getLastWorkoutExerciseMap(muscle));
 
   if (overrides.sets) personalized.sets = parseInt(overrides.sets, 10) || personalized.sets;
   if (overrides.reps) personalized.reps = overrides.reps;
@@ -1846,14 +1911,14 @@ function buildVoiceExercisePlan(name, muscle, overrides) {
 }
 
 function buildVoicePlanFromText(rawText) {
-  var normalizedText = normalizeVoiceTranscript(rawText);
-  var segments = extractVoiceSegments(normalizedText);
-  var muscle = parseVoiceMuscle(normalizedText);
-  var exercises = [];
-  var fallbackMatches;
+  const normalizedText = normalizeVoiceTranscript(rawText);
+  const segments = extractVoiceSegments(normalizedText);
+  let muscle = parseVoiceMuscle(normalizedText);
+  const exercises = [];
+  let fallbackMatches;
 
   segments.forEach(function (segment) {
-    var exerciseName = matchVoiceExerciseName(segment);
+    const exerciseName = matchVoiceExerciseName(segment);
     if (!exerciseName) return;
     exercises.push({
       name: exerciseName,
@@ -1868,8 +1933,8 @@ function buildVoicePlanFromText(rawText) {
   if (!exercises.length) {
     fallbackMatches = findVoiceExerciseMatches(normalizedText);
     fallbackMatches.forEach(function (match, index) {
-      var nextIndex = index + 1 < fallbackMatches.length ? fallbackMatches[index + 1].index : normalizedText.length;
-      var segment = normalizedText.slice(match.index, nextIndex);
+      const nextIndex = index + 1 < fallbackMatches.length ? fallbackMatches[index + 1].index : normalizedText.length;
+      const segment = normalizedText.slice(match.index, nextIndex);
       exercises.push({
         name: match.name,
         segment: segment,
@@ -1900,7 +1965,7 @@ function buildVoicePlanFromText(rawText) {
 }
 
 function getAllExerciseOptions() {
-  var options = [];
+  const options = [];
   Object.keys(exerciseLibrary).forEach(function (muscle) {
     exerciseLibrary[muscle].forEach(function (exercise) {
       options.push(exercise.name);
@@ -1910,7 +1975,7 @@ function getAllExerciseOptions() {
 }
 
 function buildVoiceResultMeta(plan) {
-  var meta = [];
+  const meta = [];
   meta.push("识别到 " + plan.exercises.length + " 个动作");
   meta.push("训练部位：" + plan.muscle);
   if (plan.source === "fallback") meta.push("未命中动作名，已回退到基础模板");
@@ -1918,7 +1983,7 @@ function buildVoiceResultMeta(plan) {
 }
 
 function updateVoicePlanExerciseField(index, field, value) {
-  var item = voicePlan && voicePlan.exercises ? voicePlan.exercises[index] : null;
+  const item = appState.voice.plan && appState.voice.plan.exercises ? appState.voice.plan.exercises[index] : null;
   if (!item) return;
   if (field === "name") {
     item.name = normalizeExerciseName(value);
@@ -1929,12 +1994,12 @@ function updateVoicePlanExerciseField(index, field, value) {
 }
 
 function createVoiceExerciseRow(exercise, index) {
-  var row = document.createElement("div");
-  var top = document.createElement("div");
-  var nameInput = document.createElement("input");
-  var note = document.createElement("div");
-  var controls = document.createElement("div");
-  var fields = [
+  const row = document.createElement("div");
+  const top = document.createElement("div");
+  const nameInput = document.createElement("input");
+  const note = document.createElement("div");
+  const controls = document.createElement("div");
+  const fields = [
     { key: "weight", label: "KG", type: "number", step: "0.5" },
     { key: "sets", label: "组数", type: "number", step: "1" },
     { key: "reps", label: "次数", type: "text" }
@@ -1947,7 +2012,7 @@ function createVoiceExerciseRow(exercise, index) {
   nameInput.value = exercise.name;
   nameInput.addEventListener("change", function () {
     updateVoicePlanExerciseField(index, "name", this.value.trim());
-    this.value = voicePlan.exercises[index].name;
+    this.value = appState.voice.plan.exercises[index].name;
   });
   note.className = "voice-ex-note";
   note.textContent = exercise.intensity + " · 休息 " + exercise.rest + " 秒";
@@ -1958,9 +2023,9 @@ function createVoiceExerciseRow(exercise, index) {
 
   controls.className = "voice-ex-controls";
   fields.forEach(function (field) {
-    var wrap = document.createElement("label");
-    var label = document.createElement("span");
-    var input = document.createElement("input");
+    const wrap = document.createElement("label");
+    const label = document.createElement("span");
+    const input = document.createElement("input");
     wrap.className = "voice-ex-control";
     label.textContent = field.label;
     input.type = field.type;
@@ -1979,14 +2044,14 @@ function createVoiceExerciseRow(exercise, index) {
 }
 
 function ensureVoiceExerciseDatalist() {
-  var list = document.getElementById("voice-exercise-options");
-  var options;
+  let list = document.getElementById("voice-exercise-options");
+  let options;
   if (list) return;
   list = document.createElement("datalist");
   list.id = "voice-exercise-options";
   options = getAllExerciseOptions();
   options.forEach(function (name) {
-    var option = document.createElement("option");
+    const option = document.createElement("option");
     option.value = name;
     list.appendChild(option);
   });
@@ -1994,19 +2059,19 @@ function ensureVoiceExerciseDatalist() {
 }
 
 function renderVoicePlan(plan) {
-  var title = document.getElementById("voice-result-title");
-  var meta = document.getElementById("voice-result-meta");
-  var transcript = document.getElementById("voice-transcript");
-  var list = document.getElementById("voice-result-list");
+  const title = document.getElementById("voice-result-title");
+  const meta = document.getElementById("voice-result-meta");
+  const transcript = document.getElementById("voice-transcript");
+  const list = document.getElementById("voice-result-list");
 
   ensureVoiceExerciseDatalist();
-  voicePlan = plan;
+  appState.voice.plan = plan;
   title.textContent = plan.source === "fallback"
     ? "未识别到具体动作，已按 " + plan.muscle + " 生成基础计划"
     : plan.muscle + " · 已识别 " + plan.exercises.length + " 个动作";
   meta.innerHTML = "";
   buildVoiceResultMeta(plan).forEach(function (item) {
-    var chip = document.createElement("span");
+    const chip = document.createElement("span");
     chip.className = "voice-meta-chip";
     chip.textContent = item;
     meta.appendChild(chip);
@@ -2022,8 +2087,8 @@ function renderVoicePlan(plan) {
 }
 
 function parseVoicePlanInput() {
-  var input = document.getElementById("voice-input").value.trim();
-  var plan;
+  const input = document.getElementById("voice-input").value.trim();
+  let plan;
 
   if (!input) {
     showToast("先说一句或输入今天的训练计划");
@@ -2036,11 +2101,11 @@ function parseVoicePlanInput() {
 }
 
 function showToast(message) {
-  var toast = document.getElementById("toast");
+  const toast = document.getElementById("toast");
   toast.textContent = message;
   toast.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () {
+  clearTimeout(appState.ui.toastTimer);
+  appState.ui.toastTimer = setTimeout(function () {
     toast.classList.remove("show");
   }, 1800);
 }
@@ -2050,13 +2115,13 @@ function saveDraft() {
   localStorage.setItem("draft", JSON.stringify({
     date: getTodayStr(),
     muscle: getCurrentMuscle(),
-    exercises: wm.exercises,
-    exIdx: wm.exIdx,
-    setDone: wm.setDone,
-    restTotal: wm.restTotal,
-    sessionLog: wm.sessionLog,
-    startedAt: wm.startedAt,
-    finishedAt: wm.finishedAt
+    exercises: appState.workout.exercises,
+    exIdx: appState.workout.exIdx,
+    setDone: appState.workout.setDone,
+    restTotal: appState.workout.restTotal,
+    sessionLog: appState.workout.sessionLog,
+    startedAt: appState.workout.startedAt,
+    finishedAt: appState.workout.finishedAt
   }));
   updateDraftBanner();
 }
@@ -2067,8 +2132,8 @@ function clearDraft() {
 }
 
 function updateDraftBanner() {
-  var raw = localStorage.getItem("draft");
-  var banner = document.getElementById("draft-banner");
+  const raw = localStorage.getItem("draft");
+  const banner = document.getElementById("draft-banner");
 
   if (!raw) {
     banner.style.display = "none";
@@ -2076,8 +2141,8 @@ function updateDraftBanner() {
   }
 
   try {
-    var draft = JSON.parse(raw);
-    var doneSets = (draft.sessionLog || []).reduce(function (sum, item) {
+    const draft = JSON.parse(raw);
+    const doneSets = (draft.sessionLog || []).reduce(function (sum, item) {
       return sum + item.completedSets.length;
     }, 0);
     document.getElementById("draft-banner-text").textContent =
@@ -2089,8 +2154,8 @@ function updateDraftBanner() {
 }
 
 function resumeDraft() {
-  var raw = localStorage.getItem("draft");
-  var draft;
+  const raw = localStorage.getItem("draft");
+  let draft;
 
   if (!raw) return;
 
@@ -2101,17 +2166,17 @@ function resumeDraft() {
     return;
   }
 
-  wm.exercises = Array.isArray(draft.exercises) ? draft.exercises : [];
-  wm.exIdx = draft.exIdx || 0;
-  wm.setDone = draft.setDone || 0;
-  wm.restTotal = draft.restTotal || 90;
-  wm.sessionLog = draft.sessionLog || [];
-  wm.startedAt = draft.startedAt || new Date().toISOString();
-  wm.finishedAt = draft.finishedAt || "";
-  wm.restEndTime = 0;
+  appState.workout.exercises = Array.isArray(draft.exercises) ? draft.exercises : [];
+  appState.workout.exIdx = draft.exIdx || 0;
+  appState.workout.setDone = draft.setDone || 0;
+  appState.workout.restTotal = draft.restTotal || 90;
+  appState.workout.sessionLog = draft.sessionLog || [];
+  appState.workout.startedAt = draft.startedAt || new Date().toISOString();
+  appState.workout.finishedAt = draft.finishedAt || "";
+  appState.workout.restEndTime = 0;
 
-  clearInterval(wm.restTimer);
-  clearTimeout(wm.exDoneTimer);
+  clearInterval(appState.workout.restTimer);
+  clearTimeout(appState.workout.exDoneTimer);
   clearDraft();
   applyPlanToEditor(normalizeMuscle(draft.muscle), draft.exercises || [], false);
   document.getElementById("workout-overlay").style.display = "flex";
@@ -2119,23 +2184,23 @@ function resumeDraft() {
 }
 
 function hasWorkoutProgress() {
-  return wm.sessionLog.some(function (item) {
+  return appState.workout.sessionLog.some(function (item) {
     return item.completedSets.length > 0;
   });
 }
 
 function startWorkoutSession(plan) {
-  clearInterval(wm.restTimer);
-  clearTimeout(wm.exDoneTimer);
-  wm.exercises = plan;
-  wm.exIdx = 0;
-  wm.setDone = 0;
-  wm.restEndTime = 0;
-  wm.restTotal = plan.length ? (parseInt(plan[0].rest, 10) || 90) : 90;
-  wm.summary = null;
-  wm.startedAt = new Date().toISOString();
-  wm.finishedAt = "";
-  wm.sessionLog = plan.map(function (exercise) {
+  clearInterval(appState.workout.restTimer);
+  clearTimeout(appState.workout.exDoneTimer);
+  appState.workout.exercises = plan;
+  appState.workout.exIdx = 0;
+  appState.workout.setDone = 0;
+  appState.workout.restEndTime = 0;
+  appState.workout.restTotal = plan.length ? (parseInt(plan[0].rest, 10) || 90) : 90;
+  appState.workout.summary = null;
+  appState.workout.startedAt = new Date().toISOString();
+  appState.workout.finishedAt = "";
+  appState.workout.sessionLog = plan.map(function (exercise) {
     return {
       name: exercise.name,
       targetWeight: exercise.weight,
@@ -2148,27 +2213,27 @@ function startWorkoutSession(plan) {
     };
   });
 
-  wm.restTimer = null;
-  wm.exDoneTimer = null;
+  appState.workout.restTimer = null;
+  appState.workout.exDoneTimer = null;
   document.getElementById("workout-overlay").style.display = "flex";
   wmShow("working");
 }
 
 function getWorkoutCompletedSetCount() {
-  return wm.sessionLog.reduce(function (sum, item) {
+  return appState.workout.sessionLog.reduce(function (sum, item) {
     return sum + item.completedSets.length;
   }, 0);
 }
 
 function wmAdvanceToNextExercise() {
-  clearInterval(wm.restTimer);
-  clearTimeout(wm.exDoneTimer);
-  wm.restEndTime = 0;
+  clearInterval(appState.workout.restTimer);
+  clearTimeout(appState.workout.exDoneTimer);
+  appState.workout.restEndTime = 0;
 
-  if (wm.exIdx + 1 < wm.exercises.length) {
-    wm.exIdx++;
-    wm.setDone = 0;
-    wm.restTotal = parseInt(wm.exercises[wm.exIdx].rest, 10) || 90;
+  if (appState.workout.exIdx + 1 < appState.workout.exercises.length) {
+    appState.workout.exIdx++;
+    appState.workout.setDone = 0;
+    appState.workout.restTotal = parseInt(appState.workout.exercises[appState.workout.exIdx].rest, 10) || 90;
     wmShow("working");
     return;
   }
@@ -2177,21 +2242,21 @@ function wmAdvanceToNextExercise() {
 }
 
 function wmSkipCurrentExercise() {
-  clearInterval(wm.restTimer);
-  clearTimeout(wm.exDoneTimer);
-  wm.restEndTime = 0;
+  clearInterval(appState.workout.restTimer);
+  clearTimeout(appState.workout.exDoneTimer);
+  appState.workout.restEndTime = 0;
   wmAdvanceToNextExercise();
 }
 
 function wmAutoSave(options) {
-  var muscle = getCurrentMuscle();
-  var today = getTodayStr();
-  var exercises = buildExercisesFromSessionLog(wm.sessionLog);
-  var sessionLog = wm.sessionLog.map(normalizeSessionLogItem).filter(Boolean);
-  var plannedExercises = wm.exercises.map(normalizeExercise).filter(Boolean);
-  var record;
-  var existingIndex = -1;
-  var isFinal = options && options.isFinal;
+  const muscle = getCurrentMuscle();
+  const today = getTodayStr();
+  const exercises = buildExercisesFromSessionLog(appState.workout.sessionLog);
+  const sessionLog = appState.workout.sessionLog.map(normalizeSessionLogItem).filter(Boolean);
+  const plannedExercises = appState.workout.exercises.map(normalizeExercise).filter(Boolean);
+  let record;
+  let existingIndex = -1;
+  const isFinal = options && options.isFinal;
 
   if (!exercises.length) return;
 
@@ -2202,22 +2267,22 @@ function wmAutoSave(options) {
     plannedExercises: plannedExercises,
     sessionLog: sessionLog,
     totalVolume: getSessionLogVolume(sessionLog),
-    startedAt: wm.startedAt || new Date().toISOString(),
-    finishedAt: isFinal ? (wm.finishedAt || new Date().toISOString()) : "",
+    startedAt: appState.workout.startedAt || new Date().toISOString(),
+    finishedAt: isFinal ? (appState.workout.finishedAt || new Date().toISOString()) : "",
     note: "",
     content: buildContent(muscle, exercises),
     _wmSession: true
   };
 
-  for (var i = 0; i < records.length; i++) {
-    if (records[i].date === today && records[i].muscle === muscle && records[i]._wmSession) {
+  for (let i = 0; i < appState.data.records.length; i++) {
+    if (appState.data.records[i].date === today && appState.data.records[i].muscle === muscle && appState.data.records[i]._wmSession) {
       existingIndex = i;
       break;
     }
   }
 
-  if (existingIndex >= 0) records[existingIndex] = record;
-  else records.push(record);
+  if (existingIndex >= 0) appState.data.records[existingIndex] = record;
+  else appState.data.records.push(record);
 
   persistRecords();
   rebuildList();
@@ -2226,10 +2291,10 @@ function wmAutoSave(options) {
 }
 
 function getWorkoutVolume() {
-  return wm.sessionLog.reduce(function (sum, item) {
+  return appState.workout.sessionLog.reduce(function (sum, item) {
     return sum + item.completedSets.reduce(function (setSum, set) {
-      var weight = parseWeightNumber(set.weight);
-      var reps = parseInt(set.reps, 10) || 0;
+      const weight = parseWeightNumber(set.weight);
+      const reps = parseInt(set.reps, 10) || 0;
       if (weight === null || !reps) return setSum;
       return setSum + weight * reps;
     }, 0);
@@ -2237,15 +2302,15 @@ function getWorkoutVolume() {
 }
 
 function getWeightIncreaseText(weight, exerciseName) {
-  var parsedWeight = parseWeightNumber(weight);
-  var nextWeight;
+  const parsedWeight = parseWeightNumber(weight);
+  let nextWeight;
   if (parsedWeight === null) return "下次尝试增加 2%-5% 的重量";
   nextWeight = formatWeightValue(bumpWeight(parsedWeight, exerciseName, 1.03));
   return "下次可以尝试 " + nextWeight + "kg";
 }
 
 function buildWorkoutSummary() {
-  var summary = {
+  const summary = {
     totalExercises: 0,
     totalSets: getWorkoutCompletedSetCount(),
     totalVolume: formatWeightValue(getWorkoutVolume()),
@@ -2254,15 +2319,15 @@ function buildWorkoutSummary() {
     suggestions: []
   };
 
-  wm.sessionLog.forEach(function (item) {
-    var completedSets = item.completedSets;
-    var lastSet;
-    var previous;
-    var targetRange;
-    var actualWeight;
-    var actualReps;
-    var targetSets;
-    var targetRest;
+  appState.workout.sessionLog.forEach(function (item) {
+    const completedSets = item.completedSets;
+    let lastSet;
+    let previous;
+    let targetRange;
+    let actualWeight;
+    let actualReps;
+    let targetSets;
+    let targetRest;
 
     if (!completedSets.length) return;
 
@@ -2310,64 +2375,107 @@ function buildWorkoutSummary() {
   return summary;
 }
 
-function renderWorkoutSummary() {
-  var summary = wm.summary || buildWorkoutSummary();
-  var metrics = document.getElementById("wm-summary-metrics");
-  var progress = document.getElementById("wm-summary-progress");
-  var cautions = document.getElementById("wm-summary-cautions");
-  var suggestions = document.getElementById("wm-summary-suggestions");
+function clearNode(node) {
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
 
-  wm.summary = summary;
+function appendWorkoutSummaryMetric(container, value, label) {
+  const item = document.createElement("div");
+  const num = document.createElement("span");
+  const text = document.createElement("span");
+
+  item.className = "wm-summary-metric";
+  num.className = "wm-summary-num";
+  num.textContent = value;
+  text.className = "wm-summary-label";
+  text.textContent = label;
+
+  item.appendChild(num);
+  item.appendChild(text);
+  container.appendChild(item);
+}
+
+function appendWorkoutSummaryItems(container, items) {
+  items.forEach(function (itemText) {
+    const item = document.createElement("div");
+    item.className = "wm-summary-item";
+    item.textContent = itemText;
+    container.appendChild(item);
+  });
+}
+
+function renderWorkoutSummary() {
+  const summary = appState.workout.summary || buildWorkoutSummary();
+  const metrics = document.getElementById("wm-summary-metrics");
+  const progress = document.getElementById("wm-summary-progress");
+  const cautions = document.getElementById("wm-summary-cautions");
+  const suggestions = document.getElementById("wm-summary-suggestions");
+
+  appState.workout.summary = summary;
   document.getElementById("wm-all-summary").textContent =
     "共完成 " + summary.totalExercises + " 个动作 · " + summary.totalSets + " 组 · 训练量 " + summary.totalVolume;
 
-  metrics.innerHTML = [
-    '<div class="wm-summary-metric"><span class="wm-summary-num">' + summary.totalExercises + '</span><span class="wm-summary-label">动作</span></div>',
-    '<div class="wm-summary-metric"><span class="wm-summary-num">' + summary.totalSets + '</span><span class="wm-summary-label">总组数</span></div>',
-    '<div class="wm-summary-metric"><span class="wm-summary-num">' + summary.totalVolume + '</span><span class="wm-summary-label">训练量</span></div>'
-  ].join("");
+  clearNode(metrics);
+  clearNode(progress);
+  clearNode(cautions);
+  clearNode(suggestions);
 
-  progress.innerHTML = summary.improvements.map(function (item) {
-    return '<div class="wm-summary-item">' + item + '</div>';
-  }).join("");
+  appendWorkoutSummaryMetric(metrics, summary.totalExercises, "动作");
+  appendWorkoutSummaryMetric(metrics, summary.totalSets, "总组数");
+  appendWorkoutSummaryMetric(metrics, summary.totalVolume, "训练量");
 
-  cautions.innerHTML = summary.cautions.slice(0, 3).map(function (item) {
-    return '<div class="wm-summary-item">' + item + '</div>';
-  }).join("");
-
-  suggestions.innerHTML = summary.suggestions.map(function (item) {
-    return '<div class="wm-summary-item">' + item + '</div>';
-  }).join("");
+  appendWorkoutSummaryItems(progress, summary.improvements);
+  appendWorkoutSummaryItems(cautions, summary.cautions.slice(0, 3));
+  appendWorkoutSummaryItems(suggestions, summary.suggestions);
 }
 
 function wmRenderSetsDone() {
-  var list = document.getElementById("wm-sets-done");
-  var sets = wm.sessionLog[wm.exIdx].completedSets;
+  const list = document.getElementById("wm-sets-done");
+  const sets = appState.workout.sessionLog[appState.workout.exIdx].completedSets;
+
+  clearNode(list);
 
   if (!sets.length) {
-    list.innerHTML = '<div class="wm-empty-sets">当前动作还没有完成组</div>';
+    const empty = document.createElement("div");
+    empty.className = "wm-empty-sets";
+    empty.textContent = "当前动作还没有完成组";
+    list.appendChild(empty);
     return;
   }
 
-  list.innerHTML = sets.map(function (set) {
-    return '<div class="wm-set-row"><span class="wm-set-num">第 ' + set.setNumber + ' 组</span><span class="wm-set-val">' + set.weight + ' kg × ' + set.reps + '</span></div>';
-  }).join("");
+  sets.forEach(function (set) {
+    const row = document.createElement("div");
+    const num = document.createElement("span");
+    const value = document.createElement("span");
+
+    row.className = "wm-set-row";
+    num.className = "wm-set-num";
+    num.textContent = "第 " + set.setNumber + " 组";
+    value.className = "wm-set-val";
+    value.textContent = set.weight + " kg × " + set.reps;
+
+    row.appendChild(num);
+    row.appendChild(value);
+    list.appendChild(row);
+  });
 }
 
 function wmUpdateHeader() {
   document.getElementById("wm-header-muscle").textContent = getCurrentMuscle();
-  document.getElementById("wm-header-ex").textContent = "动作 " + (wm.exIdx + 1) + " / " + wm.exercises.length;
+  document.getElementById("wm-header-ex").textContent = "动作 " + (appState.workout.exIdx + 1) + " / " + appState.workout.exercises.length;
 }
 
 function wmShow(state) {
-  var exercise = wm.exercises[wm.exIdx];
-  var working = document.getElementById("wm-working");
-  var resting = document.getElementById("wm-resting");
-  var exDone = document.getElementById("wm-ex-done");
-  var allDone = document.getElementById("wm-all-done");
-  var log = wm.sessionLog[wm.exIdx].completedSets;
-  var prev = log.length ? log[log.length - 1] : null;
-  var nextExercise = wm.exIdx + 1 < wm.exercises.length ? wm.exercises[wm.exIdx + 1] : null;
+  const exercise = appState.workout.exercises[appState.workout.exIdx];
+  const working = document.getElementById("wm-working");
+  const resting = document.getElementById("wm-resting");
+  const exDone = document.getElementById("wm-ex-done");
+  const allDone = document.getElementById("wm-all-done");
+  const log = appState.workout.sessionLog[appState.workout.exIdx].completedSets;
+  const prev = log.length ? log[log.length - 1] : null;
+  const nextExercise = appState.workout.exIdx + 1 < appState.workout.exercises.length ? appState.workout.exercises[appState.workout.exIdx + 1] : null;
 
   working.style.display = "none";
   resting.style.display = "none";
@@ -2381,10 +2489,10 @@ function wmShow(state) {
     document.getElementById("wm-target").textContent =
       exercise.weight + " kg × " + exercise.sets + " 组 × " + exercise.reps + " 次";
     document.getElementById("wm-progress").textContent =
-      "第 " + (wm.setDone + 1) + " / " + exercise.sets + " 组";
+      "第 " + (appState.workout.setDone + 1) + " / " + exercise.sets + " 组";
     document.getElementById("wm-input-weight").value = prev ? prev.weight : exercise.weight;
     document.getElementById("wm-input-reps").value = prev ? prev.reps : getRepInputValue(exercise.reps);
-    document.getElementById("wm-input-rest").value = parseInt(exercise.rest, 10) || wm.restTotal;
+    document.getElementById("wm-input-rest").value = parseInt(exercise.rest, 10) || appState.workout.restTotal;
     wmRenderSetsDone();
     return;
   }
@@ -2393,7 +2501,7 @@ function wmShow(state) {
     resting.style.display = "flex";
     document.getElementById("wm-rest-ex-name").textContent = exercise.name;
     document.getElementById("wm-rest-next").textContent =
-      "下一组 第 " + (wm.setDone + 1) + " / " + exercise.sets + " 组";
+      "下一组 第 " + (appState.workout.setDone + 1) + " / " + exercise.sets + " 组";
     wmStartRest();
     return;
   }
@@ -2409,14 +2517,14 @@ function wmShow(state) {
     if (nextExercise) {
       document.getElementById("wm-next-hint").textContent = "下一动作：" + nextExercise.name;
       document.getElementById("wm-next-ex-btn").style.display = "block";
-      wm.exDoneTimer = setTimeout(function () {
+      appState.workout.exDoneTimer = setTimeout(function () {
         wmAdvanceToNextExercise();
       }, 1500);
     } else {
       document.getElementById("wm-next-hint").textContent = "所有动作都已完成";
       document.getElementById("wm-next-ex-btn").style.display = "block";
       document.getElementById("wm-next-ex-btn").textContent = "查看完成";
-      wm.exDoneTimer = setTimeout(function () {
+      appState.workout.exDoneTimer = setTimeout(function () {
         wmShow("all-done");
       }, 1200);
     }
@@ -2432,38 +2540,38 @@ function wmShow(state) {
 }
 
 function wmStartRest() {
-  clearInterval(wm.restTimer);
-  wm.restEndTime = Date.now() + wm.restTotal * 1000;
+  clearInterval(appState.workout.restTimer);
+  appState.workout.restEndTime = Date.now() + appState.workout.restTotal * 1000;
   wmTickRest();
-  wm.restTimer = setInterval(wmTickRest, 500);
+  appState.workout.restTimer = setInterval(wmTickRest, 500);
 }
 
 function wmTickRest() {
-  var remaining = Math.ceil((wm.restEndTime - Date.now()) / 1000);
+  let remaining = Math.ceil((appState.workout.restEndTime - Date.now()) / 1000);
 
   if (remaining < 0) remaining = 0;
   wmUpdateTimerDisplay(remaining);
 
   if (remaining <= 0) {
-    clearInterval(wm.restTimer);
+    clearInterval(appState.workout.restTimer);
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     wmShow("working");
   }
 }
 
 function wmUpdateTimerDisplay(seconds) {
-  var minutes = Math.floor(seconds / 60);
-  var secs = seconds % 60;
-  var text = String(minutes).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
-  var timer = document.getElementById("wm-timer");
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const text = String(minutes).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+  const timer = document.getElementById("wm-timer");
 
   timer.textContent = text;
   timer.className = "wm-timer" + (seconds <= 10 ? " urgent" : "");
 }
 
 function getPrevRecord(currentIndex, muscle) {
-  var currentDate = parseDateString(records[currentIndex].date).getTime();
-  var candidates = records.filter(function (record, index) {
+  const currentDate = parseDateString(appState.data.records[currentIndex].date).getTime();
+  const candidates = appState.data.records.filter(function (record, index) {
     return index !== currentIndex &&
       record.muscle === muscle &&
       record.exercises &&
@@ -2480,83 +2588,171 @@ function getPrevRecord(currentIndex, muscle) {
   return candidates[0];
 }
 
-function diffVal(current, previous, unit) {
-  var hasCurrent = current !== "" && current !== undefined && current !== null;
-  var hasPrevious = previous !== "" && previous !== undefined && previous !== null;
-  var c;
-  var p;
-  var arrow;
+function appendCompareValue(container, current, previous, unit) {
+  const hasCurrent = current !== "" && current !== undefined && current !== null;
+  const hasPrevious = previous !== "" && previous !== undefined && previous !== null;
+  const currentText = document.createTextNode(hasCurrent ? current + unit : "—");
+  let currentNum;
+  let previousNum;
+  let arrow;
+  let previousText;
 
-  if (!hasCurrent && !hasPrevious) return '<span class="cmp-na">—</span>';
-  if (!hasPrevious) return '<span class="cmp-na">' + current + unit + '</span>';
-  if (!hasCurrent) return '<span class="cmp-na">—</span>';
+  if (!hasCurrent && !hasPrevious) {
+    const empty = document.createElement("span");
+    empty.className = "cmp-na";
+    empty.textContent = "—";
+    container.appendChild(empty);
+    return;
+  }
 
-  c = parseFloat(current);
-  p = parseFloat(previous);
-  arrow = c > p ? ' <span class="cmp-up">↑</span>' : c < p ? ' <span class="cmp-down">↓</span>' : ' <span class="cmp-eq">=</span>';
-  return current + unit + arrow + ' <span class="cmp-prev">(' + previous + unit + ')</span>';
+  if (!hasPrevious) {
+    const onlyCurrent = document.createElement("span");
+    onlyCurrent.className = "cmp-na";
+    onlyCurrent.textContent = current + unit;
+    container.appendChild(onlyCurrent);
+    return;
+  }
+
+  if (!hasCurrent) {
+    const missing = document.createElement("span");
+    missing.className = "cmp-na";
+    missing.textContent = "—";
+    container.appendChild(missing);
+    return;
+  }
+
+  currentNum = parseFloat(current);
+  previousNum = parseFloat(previous);
+  arrow = document.createElement("span");
+  arrow.className = currentNum > previousNum ? "cmp-up" : currentNum < previousNum ? "cmp-down" : "cmp-eq";
+  arrow.textContent = currentNum > previousNum ? "↑" : currentNum < previousNum ? "↓" : "=";
+  previousText = document.createElement("span");
+  previousText.className = "cmp-prev";
+  previousText.textContent = "(" + previous + unit + ")";
+
+  container.appendChild(currentText);
+  container.appendChild(document.createTextNode(" "));
+  container.appendChild(arrow);
+  container.appendChild(document.createTextNode(" "));
+  container.appendChild(previousText);
+}
+
+function appendCompareMetricLine(container, current, previous, unit) {
+  const line = document.createElement("div");
+  appendCompareValue(line, current, previous, unit);
+  container.appendChild(line);
+}
+
+function renderCompareHeader(body, currentDate, previousDate) {
+  const row = document.createElement("div");
+  const currentLabel = document.createElement("span");
+  const currentValue = document.createElement("span");
+  const sep = document.createElement("span");
+  const previousLabel = document.createElement("span");
+  const previousValue = document.createElement("span");
+  const divider = document.createElement("div");
+
+  row.className = "cmp-date-row";
+  currentLabel.className = "cmp-date-label";
+  currentLabel.textContent = "本次";
+  currentValue.className = "cmp-date-val";
+  currentValue.textContent = currentDate;
+  sep.className = "cmp-date-sep";
+  sep.textContent = "vs";
+  previousLabel.className = "cmp-date-label";
+  previousLabel.textContent = "上次";
+  previousValue.className = "cmp-date-val";
+  previousValue.textContent = previousDate;
+  divider.className = "cmp-divider";
+
+  row.appendChild(currentLabel);
+  row.appendChild(currentValue);
+  row.appendChild(sep);
+  row.appendChild(previousLabel);
+  row.appendChild(previousValue);
+  body.appendChild(row);
+  body.appendChild(divider);
+}
+
+function renderCompareEmpty(body) {
+  const empty = document.createElement("p");
+  empty.className = "cmp-empty";
+  empty.textContent = "暂无可对比的上次训练记录";
+  body.appendChild(empty);
+}
+
+function renderCompareRow(body, name, current, prev) {
+  const row = document.createElement("div");
+  const left = document.createElement("div");
+  const nameText = document.createElement("span");
+  const right = document.createElement("div");
+  let badge;
+
+  row.className = "cmp-row";
+  left.className = "cmp-name";
+  right.className = "cmp-fields";
+  nameText.textContent = name;
+  left.appendChild(nameText);
+
+  if (current && !prev) {
+    badge = document.createElement("span");
+    badge.className = "cmp-badge cmp-badge-new";
+    badge.textContent = "新增";
+    left.appendChild(badge);
+  } else if (!current && prev) {
+    badge = document.createElement("span");
+    badge.className = "cmp-badge cmp-badge-missing";
+    badge.textContent = "本次未做";
+    left.appendChild(badge);
+  }
+
+  if (!current) {
+    const missing = document.createElement("span");
+    missing.className = "cmp-na";
+    missing.textContent = "—";
+    right.appendChild(missing);
+  } else {
+    appendCompareMetricLine(right, current.weight, prev && prev.weight, "kg");
+    appendCompareMetricLine(right, current.sets, prev && prev.sets, "组");
+    appendCompareMetricLine(right, current.reps, prev && prev.reps, "次");
+  }
+
+  row.appendChild(left);
+  row.appendChild(right);
+  body.appendChild(row);
 }
 
 function showCompare(record, index) {
-  var previous = getPrevRecord(index, record.muscle);
-  var body = document.getElementById("compare-body");
-  var currentMap = {};
-  var previousMap = {};
-  var allNames = [];
+  const previous = getPrevRecord(index, record.muscle);
+  const body = document.getElementById("compare-body");
+  const currentMap = {};
+  const previousMap = {};
+  const allNames = [];
+  const currentExercises = getRecordExercises(record);
+  const previousExercises = previous ? getRecordExercises(previous) : [];
 
   document.getElementById("compare-title").textContent = record.muscle + " · 对比上次训练";
-  body.innerHTML = "";
+  clearNode(body);
 
   if (!previous) {
-    body.innerHTML = '<p class="cmp-empty">暂无可对比的上次训练记录</p>';
+    renderCompareEmpty(body);
     document.getElementById("compare-modal").style.display = "flex";
     return;
   }
 
-  record.exercises.forEach(function (exercise) {
+  currentExercises.forEach(function (exercise) {
     currentMap[exercise.name] = exercise;
     allNames.push(exercise.name);
   });
-  previous.exercises.forEach(function (exercise) {
+  previousExercises.forEach(function (exercise) {
     previousMap[exercise.name] = exercise;
     if (!currentMap[exercise.name]) allNames.push(exercise.name);
   });
 
-  body.innerHTML =
-    '<div class="cmp-date-row"><span class="cmp-date-label">本次</span><span class="cmp-date-val">' + record.date +
-    '</span><span class="cmp-date-sep">vs</span><span class="cmp-date-label">上次</span><span class="cmp-date-val">' +
-    previous.date + '</span></div><div class="cmp-divider"></div>';
+  renderCompareHeader(body, record.date, previous.date);
 
   allNames.forEach(function (name) {
-    var current = currentMap[name];
-    var prev = previousMap[name];
-    var row = document.createElement("div");
-    var left = document.createElement("div");
-    var right = document.createElement("div");
-
-    row.className = "cmp-row";
-    left.className = "cmp-name";
-    right.className = "cmp-fields";
-    left.innerHTML = "<span>" + name + "</span>";
-
-    if (current && !prev) {
-      left.innerHTML += '<span class="cmp-badge cmp-badge-new">新增</span>';
-    } else if (!current && prev) {
-      left.innerHTML += '<span class="cmp-badge cmp-badge-missing">本次未做</span>';
-    }
-
-    if (!current) {
-      right.innerHTML = '<span class="cmp-na">—</span>';
-    } else {
-      right.innerHTML =
-        diffVal(current.weight, prev && prev.weight, "kg") + ' &nbsp;·&nbsp; ' +
-        diffVal(current.sets, prev && prev.sets, "组") + ' &nbsp;·&nbsp; ' +
-        diffVal(current.reps, prev && prev.reps, "次");
-    }
-
-    row.appendChild(left);
-    row.appendChild(right);
-    body.appendChild(row);
+    renderCompareRow(body, name, currentMap[name], previousMap[name]);
   });
 
   document.getElementById("compare-modal").style.display = "flex";
