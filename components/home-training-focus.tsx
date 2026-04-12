@@ -7,10 +7,56 @@ import { useEffect, useMemo, useState } from "react";
 import { formatTimer } from "@/lib/utils";
 import { useTrainingStore } from "@/store/training-store";
 
+const FALLBACK_QUOTES = [
+  "你不需要一开始就很强，只需要今天先开始。",
+  "训练不是证明自己，而是一次次兑现自己。",
+  "今天多做一组，明天就少一点后悔。",
+  "把注意力放在下一组，进步会自己累积起来。",
+];
+
+interface HitokotoResponse {
+  hitokoto?: string;
+  from?: string;
+  from_who?: string | null;
+}
+
 export function HomeTrainingFocus() {
   const router = useRouter();
   const workout = useTrainingStore((state) => state.workout);
   const [now, setNow] = useState(0);
+  const [quote, setQuote] = useState(FALLBACK_QUOTES[0]);
+  const [quoteSource, setQuoteSource] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadQuote() {
+      try {
+        const response = await fetch("https://v1.hitokoto.cn/?c=d&c=e&c=k&encode=json&max_length=28", {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as HitokotoResponse;
+        if (cancelled) return;
+        if (payload.hitokoto) {
+          setQuote(payload.hitokoto);
+          setQuoteSource([payload.from_who, payload.from].filter(Boolean).join(" · ") || "一言");
+          return;
+        }
+        throw new Error("empty quote");
+      } catch {
+        if (cancelled) return;
+        const fallback = FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)];
+        setQuote(fallback);
+        setQuoteSource("训练助手");
+      }
+    }
+
+    loadQuote();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!workout || workout.finishedAt) return;
@@ -49,7 +95,8 @@ export function HomeTrainingFocus() {
           <h1 className="text-4xl font-semibold tracking-[-0.08em] text-slate-950 sm:text-6xl">
             {hasActiveWorkout ? "训练状态" : "开始训练"}
           </h1>
-          <p className="text-sm leading-6 text-slate-500 sm:text-lg">{statusText}</p>
+          <p className="text-sm leading-6 text-slate-500 sm:text-lg">{quote}</p>
+          {quoteSource ? <div className="text-xs text-slate-400">{quoteSource}</div> : null}
         </div>
 
         {hasActiveWorkout ? (
@@ -59,10 +106,8 @@ export function HomeTrainingFocus() {
               <div className="mt-2 text-xl font-semibold tracking-[-0.04em] text-slate-950">{workout.muscle}</div>
             </div>
             <div className="rounded-[22px] border border-slate-200 bg-white/88 px-4 py-4 text-left sm:rounded-[26px]">
-              <div className="text-xs uppercase tracking-[0.24em] text-slate-400">当前节奏</div>
-              <div className="mt-2 text-xl font-semibold tracking-[-0.04em] text-slate-950">
-                {isResting ? formatTimer(remaining) : `${Math.min(completedSets + 1, targetSets || 1)} / ${targetSets || 1} 组`}
-              </div>
+              <div className="text-xs uppercase tracking-[0.24em] text-slate-400">当前状态</div>
+              <div className="mt-2 text-base font-semibold tracking-[-0.03em] text-slate-950">{statusText}</div>
             </div>
           </div>
         ) : (

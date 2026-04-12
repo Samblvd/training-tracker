@@ -42,7 +42,17 @@ export function PlannerEditor() {
                   type="checkbox"
                   className="mt-1 h-4 w-4 rounded border-slate-300 text-[var(--accent-strong)] focus:ring-[var(--accent-strong)]"
                   checked={exercise.selected}
-                  onChange={(event) => togglePlannerExercise(exercise.name, event.target.checked)}
+                  onChange={(event) => {
+                    const nextSelected = event.target.checked;
+                    if (!nextSelected && exercise.selected) {
+                      const shouldDelete = window.confirm(`是否确认删除“${exercise.name}”这个训练动作？`);
+                      if (!shouldDelete) {
+                        event.preventDefault();
+                        return;
+                      }
+                    }
+                    togglePlannerExercise(exercise.name, nextSelected);
+                  }}
                 />
                 <span>
                   <span className="block text-base font-semibold tracking-[-0.04em] text-slate-950 sm:text-lg">{exercise.name}</span>

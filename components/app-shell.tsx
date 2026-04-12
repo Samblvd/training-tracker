@@ -100,7 +100,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="flex min-w-0 flex-1 flex-col gap-6 py-1 pb-20 lg:pb-0">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur lg:hidden">
         <div className={cn("gap-1 px-2 py-2", hasActiveWorkout ? "grid grid-cols-2" : "grid grid-cols-2")}>
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
