@@ -10,6 +10,82 @@ import { ExercisePlanItem, TrainingRecord } from "@/lib/types";
 import { getPrevRecord, getRecordExercises } from "@/lib/utils";
 import { useTrainingStore } from "@/store/training-store";
 
+function escapeXml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildShareCardSvg(record: TrainingRecord, exercises: ExercisePlanItem[]) {
+  const rows = exercises.slice(0, 6);
+  const itemRows = rows
+    .map(
+      (exercise, index) => `
+        <g transform="translate(64, ${340 + index * 110})">
+          <text x="0" y="0" font-size="40" font-weight="700" fill="#0f172a">${escapeXml(exercise.name)}</text>
+          <text x="0" y="54" font-size="28" fill="#475569">${escapeXml(`${exercise.weight || "—"}kg · ${exercise.sets || "—"} 组 · ${exercise.reps || "—"} 次`)}</text>
+        </g>`,
+    )
+    .join("");
+
+  return `
+  <svg width="1080" height="1350" viewBox="0 0 1080 1350" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1080" height="1350" rx="72" fill="#F8FAFC" />
+    <rect x="28" y="28" width="1024" height="1294" rx="56" fill="white" />
+    <circle cx="918" cy="162" r="170" fill="#F15A22" opacity="0.12" />
+    <text x="64" y="110" font-size="28" font-weight="700" fill="#94A3B8" letter-spacing="8">TRAINING RECORD</text>
+    <text x="64" y="192" font-size="76" font-weight="800" fill="#0F172A">${escapeXml(record.muscle)} 训练完成</text>
+    <text x="64" y="246" font-size="34" fill="#64748B">${escapeXml(record.date)} · 总训练量 ${escapeXml(String(record.totalVolume || 0))}</text>
+
+    <rect x="64" y="1050" width="952" height="208" rx="36" fill="#0F172A" />
+    <text x="112" y="1128" font-size="26" font-weight="700" fill="#94A3B8">今日摘要</text>
+    <text x="112" y="1196" font-size="50" font-weight="800" fill="white">${rows.length} 个动作</text>
+    <text x="600" y="1196" font-size="50" font-weight="800" fill="white">${escapeXml(String(record.sessionLog.reduce((sum, item) => sum + item.completedSets.length, 0)))} 组</text>
+    <text x="112" y="1242" font-size="28" fill="#CBD5E1">训练助手生成分享图，可直接发到微信或朋友圈</text>
+
+    ${itemRows}
+  </svg>`;
+}
+
+async function renderShareImage(record: TrainingRecord, exercises: ExercisePlanItem[]) {
+  const svg = buildShareCardSvg(record, exercises);
+  const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+  const svgUrl = URL.createObjectURL(svgBlob);
+
+  try {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = svgUrl;
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("image-load-failed"));
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 1350;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("canvas-unavailable");
+    }
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    const pngBlob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("blob-failed"));
+      }, "image/png");
+    });
+
+    return pngBlob;
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+}
+
 function CompareBlock({ record, previous }: { record: TrainingRecord; previous?: TrainingRecord }) {
   const currentMap = new Map(getRecordExercises(record).map((exercise) => [exercise.name, exercise]));
   const previousMap = new Map((previous ? getRecordExercises(previous) : []).map((exercise) => [exercise.name, exercise]));
@@ -54,6 +130,7 @@ export function HistoryView() {
   const deleteRecord = useTrainingStore((state) => state.deleteRecord);
   const importRecords = useTrainingStore((state) => state.importRecords);
   const [compareId, setCompareId] = useState<string | null>(null);
+  const [sharingId, setSharingId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
 
   const exportJson = () => {
@@ -79,6 +156,43 @@ export function HistoryView() {
     const text = await file.text();
     const result = importRecords(text);
     setStatus(result.message);
+  };
+
+  const shareRecordImage = async (record: TrainingRecord) => {
+    const exercises = getRecordExercises(record);
+    if (!exercises.length) {
+      setStatus("这条记录暂无可分享的训练动作");
+      return;
+    }
+
+    setSharingId(record.id);
+    try {
+      const blob = await renderShareImage(record, exercises);
+      const file = new File([blob], `${record.date}-${record.muscle}-training.png`, { type: "image/png" });
+
+      if (navigator.share && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: `${record.muscle} 训练记录`,
+          text: `${record.date} 的 ${record.muscle} 训练记录`,
+          files: [file],
+        });
+        setStatus("分享面板已打开");
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${record.date}-${record.muscle}-training.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus("分享图已下载，可以直接发到微信或朋友圈");
+    } catch (error) {
+      console.error(error);
+      setStatus("生成分享图失败，请稍后再试");
+    } finally {
+      setSharingId(null);
+    }
   };
 
   return (
@@ -155,6 +269,13 @@ export function HistoryView() {
                         className="rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
                       >
                         对比上次
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => shareRecordImage(record)}
+                        className="rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                      >
+                        {sharingId === record.id ? "生成中..." : "分享图片"}
                       </button>
                       <button
                         type="button"
