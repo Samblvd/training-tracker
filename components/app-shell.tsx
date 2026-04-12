@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CalendarClock, Dumbbell, History, LayoutDashboard, TimerReset } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
+import { BarChart3, CalendarClock, Dumbbell, History, LayoutDashboard } from "lucide-react";
+import { ReactNode } from "react";
 
-import { cn, formatTimer } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useTrainingStore } from "@/store/training-store";
 
 const navItems = [
@@ -20,32 +20,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const selectedMuscle = useTrainingStore((state) => state.selectedMuscle);
   const workout = useTrainingStore((state) => state.workout);
-  const [now, setNow] = useState(0);
-
-  useEffect(() => {
-    if (!workout) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(timer);
-  }, [workout]);
 
   const isWorkoutComplete =
     !!workout &&
     workout.exercises.length > 0 &&
     workout.sessionLog.every((item) => item.completedSets.length >= (Number.parseInt(item.targetSets || "0", 10) || 0));
   const hasActiveWorkout = !!workout && !isWorkoutComplete;
-  const timerBase = now || ((workout?.restEndAt || 0) - (workout?.restTotal || 0) * 1000);
-  const remaining = workout?.restEndAt ? Math.max(0, Math.ceil((workout.restEndAt - timerBase) / 1000)) : 0;
-  const isResting = remaining > 0;
+  const isResting = !!workout?.restEndAt;
 
-  const mobileNavItems = hasActiveWorkout
-    ? [
-        { href: "/", label: "状态", icon: LayoutDashboard },
-        { href: "/workout", label: isResting ? formatTimer(remaining) : "训练中", icon: TimerReset },
-      ]
-    : [
-        { href: "/", label: "开始", icon: LayoutDashboard },
-        { href: "/history", label: "记录", icon: History },
-      ];
+  const mobileNavItems = [
+    { href: "/", label: "开始", icon: LayoutDashboard },
+    { href: "/history", label: "记录", icon: History },
+  ];
+  const hideMobileNav = hasActiveWorkout && pathname === "/workout";
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-slate-900">
@@ -100,29 +87,31 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="flex min-w-0 flex-1 flex-col gap-4 pb-20 pt-0 lg:gap-6 lg:py-1 lg:pb-0">{children}</main>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 lg:hidden">
-        <nav className="border-t border-slate-200 bg-white/95 px-2 py-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] shadow-[0_-12px_30px_rgba(15,23,42,0.06)] backdrop-blur">
-          <div className={cn("grid grid-cols-2 gap-1")}>
-            {mobileNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition",
-                    isActive ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]" : "text-slate-500",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-      </div>
+      {hideMobileNav ? null : (
+        <div className="fixed inset-x-0 bottom-0 z-50 lg:hidden">
+          <nav className="border-t border-slate-200 bg-white/95 px-2 py-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] shadow-[0_-12px_30px_rgba(15,23,42,0.06)] backdrop-blur">
+            <div className={cn("grid grid-cols-2 gap-1")}>
+              {mobileNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition",
+                      isActive ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]" : "text-slate-500",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
+      )}
     </div>
   );
 }

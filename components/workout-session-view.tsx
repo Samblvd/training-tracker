@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { formatTimer, getRepInputValue } from "@/lib/utils";
 import { useTrainingStore } from "@/store/training-store";
@@ -48,10 +48,6 @@ export function WorkoutSessionView() {
   const isResting = remaining > 0;
   const currentSetElapsed = workout ? Math.max(0, Math.floor((effectiveNow - workout.currentSetStartedAt) / 1000)) : 0;
   const lastSet = completedSets[completedSets.length - 1];
-  const workoutDuration = useMemo(() => {
-    if (!workout?.startedAt) return 0;
-    return Math.max(0, Math.floor((effectiveNow - new Date(workout.startedAt).getTime()) / 1000));
-  }, [effectiveNow, workout]);
   const finishedDuration = (() => {
     if (!workout?.startedAt || !workout?.finishedAt) return 0;
     return Math.max(0, Math.floor((new Date(workout.finishedAt).getTime() - new Date(workout.startedAt).getTime()) / 1000));
@@ -151,21 +147,11 @@ export function WorkoutSessionView() {
     return (
       <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-slate-900 bg-slate-950 px-4 py-6 text-white shadow-[0_28px_80px_rgba(15,23,42,0.30)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
         <div className="mx-auto grid w-full max-w-lg gap-5 text-center sm:max-w-xl sm:gap-8">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45 sm:text-xs">
-              <span>{workout?.muscle}</span>
-              <span>{actionIndex}/{totalActions}</span>
-            </div>
-            <div className="h-2 rounded-full bg-white/10">
-              <div className="h-2 rounded-full bg-white" style={{ width: `${progressPercent}%` }} />
-            </div>
-          </div>
-
           <div className="space-y-2 sm:space-y-3">
             <h1 className="text-4xl font-semibold tracking-[-0.07em] sm:text-5xl">休息中</h1>
             <div className="text-6xl font-semibold tracking-[-0.09em] text-white sm:text-8xl">{formatTimer(remaining)}</div>
             <p className="text-sm leading-6 text-white/65 sm:text-base">下一组：第 {nextSetNumber} / {targetSets || 1} 组</p>
-            <div className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/65">{currentExercise?.name}</div>
+            <div className="text-sm text-white/50">{currentExercise?.name}</div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -231,51 +217,38 @@ export function WorkoutSessionView() {
 
   return (
     <section className="relative flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-3 py-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-4 sm:py-8 lg:px-6 lg:py-10">
-      <div className="mx-auto grid w-full max-w-md gap-3 pb-28 text-center sm:max-w-lg sm:gap-4 sm:pb-32">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 sm:text-xs">
-            <span>{workout?.muscle}</span>
-            <span>{actionIndex}/{totalActions}</span>
-          </div>
-          <div className="h-2 rounded-full bg-slate-100">
-            <div className="h-2 rounded-full bg-[var(--accent-strong)]" style={{ width: `${progressPercent}%` }} />
-          </div>
+      <div className="mx-auto grid w-full max-w-md gap-4 pb-28 text-center sm:max-w-lg sm:gap-5 sm:pb-32">
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">训练进行中</div>
+          <h1 className="text-3xl font-semibold tracking-[-0.07em] text-slate-950 sm:text-4xl">
+            {currentExercise?.name} 第{nextSetNumber}-{targetSets || 1}组
+          </h1>
         </div>
 
-        <div className="space-y-1.5 sm:space-y-2">
-          <h1 className="text-2xl font-semibold tracking-[-0.07em] text-slate-950 sm:text-3xl">{currentExercise?.name}</h1>
-          <div className="text-sm font-medium text-slate-500 sm:text-base">第 {nextSetNumber} / {targetSets || 1} 组</div>
-          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 sm:text-xs">
-            <span className="rounded-full bg-slate-100 px-2.5 py-1">训练时长 {formatTimer(workoutDuration)}</span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1">目标 {currentExercise?.weight || "0"}kg × {getRepInputValue(currentExercise?.reps) || currentExercise?.reps || "8"}</span>
-          </div>
-        </div>
-
-        <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 sm:rounded-[24px] sm:px-5 sm:py-4">
-          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">本组计时</div>
-          <div className="mt-1 text-3xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-4xl">{formatTimer(currentSetElapsed)}</div>
-          <div className="mt-2 text-xs text-slate-500">已完成 {completedSets.length} / {targetSets || 1} 组</div>
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+        <div className="grid gap-3">
           <label className="grid gap-1.5 text-left text-sm">
             <span className="text-slate-500">重量</span>
             <input
               ref={weightRef}
               defaultValue={lastSet?.weight || currentExercise?.weight || "0"}
-              className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-2.5 text-lg font-semibold text-slate-950 outline-none transition focus:border-[var(--accent-strong)] sm:rounded-[20px] sm:py-3 sm:text-xl"
+              className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3 text-xl font-semibold text-slate-950 outline-none transition focus:border-[var(--accent-strong)] sm:rounded-[24px] sm:px-5 sm:py-3.5 sm:text-2xl"
             />
           </label>
+
           <label className="grid gap-1.5 text-left text-sm">
             <span className="text-slate-500">次数</span>
             <input
               ref={repsRef}
               defaultValue={lastSet?.reps || getRepInputValue(currentExercise?.reps) || "8"}
-              className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-2.5 text-lg font-semibold text-slate-950 outline-none transition focus:border-[var(--accent-strong)] sm:rounded-[20px] sm:py-3 sm:text-xl"
+              className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3 text-xl font-semibold text-slate-950 outline-none transition focus:border-[var(--accent-strong)] sm:rounded-[24px] sm:px-5 sm:py-3.5 sm:text-2xl"
             />
           </label>
-        </div>
 
+          <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3.5 sm:rounded-[24px] sm:px-5 sm:py-4">
+            <div className="text-sm text-slate-500">计时</div>
+            <div className="mt-1 text-4xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-5xl">{formatTimer(currentSetElapsed)}</div>
+          </div>
+        </div>
       </div>
 
       <div className="pointer-events-none absolute inset-x-3 bottom-3 sm:inset-x-4 sm:bottom-4 lg:inset-x-6">

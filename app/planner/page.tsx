@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -26,7 +27,7 @@ function PlannerPageContent() {
 
   const hasActiveWorkout = !!workout && !workout.finishedAt;
   const secondaryActionClass =
-    "flex min-h-10 w-full items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs leading-none font-medium text-slate-600 whitespace-nowrap font-sans sm:min-h-11 sm:px-4 sm:py-2.5 sm:text-sm";
+    "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-3 py-2.5 text-center text-xs font-medium leading-none whitespace-nowrap font-sans transition sm:min-h-11 sm:px-4 sm:py-2.5 sm:text-sm";
 
   useEffect(() => {
     if (selectedMuscleFromUrl && selectedMuscleFromUrl !== selectedMuscle) {
@@ -96,15 +97,17 @@ function PlannerPageContent() {
               <button
                 type="button"
                 onClick={() => loadDefaultPlan(selectedMuscle)}
-                className={secondaryActionClass}
+                className={`${secondaryActionClass} border border-[var(--accent-strong)]/20 bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-[0_10px_24px_rgba(241,90,34,0.10)]`}
               >
+                <RotateCcw className="h-3.5 w-3.5" />
                 恢复默认
               </button>
               <button
                 type="button"
                 onClick={() => router.push("/planner")}
-                className={secondaryActionClass}
+                className={`${secondaryActionClass} border border-slate-200 bg-slate-50 text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.05)]`}
               >
+                <ArrowLeft className="h-3.5 w-3.5" />
                 重新选部位
               </button>
             </div>
