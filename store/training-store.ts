@@ -70,6 +70,7 @@ interface TrainingState {
   skipCurrentExercise: () => void;
   finishWorkout: () => ActionResult;
   clearWorkout: () => void;
+  resumeWorkoutState: () => void;
   setVoicePlan: (plan: VoicePlan | null) => void;
   parseVoicePlanFallback: (input: string) => VoicePlan;
 }
@@ -527,6 +528,33 @@ export const useTrainingStore = create<TrainingState>()(
         return { ok: true, message: "训练已记录并生成总结" };
       },
       clearWorkout: () => set({ workout: null }),
+      resumeWorkoutState: () =>
+        set((state) => {
+          const workout = state.workout;
+          if (!workout || workout.finishedAt) return {};
+
+          const resumedWorkout: WorkoutSession = {
+            ...workout,
+            sessionLog: workout.sessionLog.map((item) => ({
+              ...item,
+              completedSets: item.completedSets.slice(),
+            })),
+          };
+
+          let changed = false;
+          const currentCompletedSets = resumedWorkout.sessionLog[resumedWorkout.exIdx]?.completedSets.length || 0;
+          if (currentCompletedSets !== resumedWorkout.setDone) {
+            resumedWorkout.setDone = currentCompletedSets;
+            changed = true;
+          }
+
+          if (resumedWorkout.restEndAt && resumedWorkout.restEndAt <= Date.now()) {
+            resumedWorkout.restEndAt = null;
+            changed = true;
+          }
+
+          return changed ? { workout: touchWorkout(resumedWorkout) } : {};
+        }),
       setVoicePlan: (voicePlan) => set({ voicePlan }),
       parseVoicePlanFallback: (input) => buildVoicePlanFromText(input, get().selectedMuscle, get().records),
     }),

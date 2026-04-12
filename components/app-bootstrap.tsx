@@ -1,15 +1,23 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { useTrainingStore } from "@/store/training-store";
 
 export function AppBootstrap() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const hydrated = useTrainingStore((state) => state.hydrated);
+  const workout = useTrainingStore((state) => state.workout);
+  const resumeWorkoutState = useTrainingStore((state) => state.resumeWorkoutState);
+
   useEffect(() => {
     const finishHydration = () => {
       const store = useTrainingStore.getState();
       store.markHydrated(true);
       store.initializeFromLegacy();
+      store.resumeWorkoutState();
     };
 
     if (useTrainingStore.persist.hasHydrated()) {
@@ -22,6 +30,31 @@ export function AppBootstrap() {
 
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const handleResume = () => {
+      if (document.visibilityState === "hidden") return;
+      resumeWorkoutState();
+    };
+
+    handleResume();
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("focus", handleResume);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("focus", handleResume);
+    };
+  }, [hydrated, resumeWorkoutState]);
+
+  useEffect(() => {
+    if (!hydrated || !workout || workout.finishedAt) return;
+    if (pathname === "/" || pathname === "/planner") {
+      router.replace("/workout");
+    }
+  }, [hydrated, pathname, router, workout]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;

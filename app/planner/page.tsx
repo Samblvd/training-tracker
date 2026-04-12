@@ -85,7 +85,7 @@ function PlannerPageContent() {
   }
 
   return (
-    <div className="grid gap-5 pb-24 sm:gap-6 lg:pb-0">
+    <div className="grid gap-5 pb-28 sm:gap-6 lg:pb-0">
       <section className="rounded-[28px] border border-white/70 bg-white/95 px-4 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:rounded-[36px] sm:px-6 sm:py-8">
         <div className="grid gap-4 sm:gap-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -94,13 +94,13 @@ function PlannerPageContent() {
               <button
                 type="button"
                 onClick={() => loadDefaultPlan(selectedMuscle)}
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 sm:px-4 sm:py-2.5 sm:text-sm"
+                className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs leading-none font-medium text-slate-600 sm:min-h-11 sm:px-4 sm:py-2.5 sm:text-sm"
               >
                 恢复默认
               </button>
               <Link
                 href="/planner"
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs font-medium text-slate-600 sm:px-4 sm:py-2.5 sm:text-sm"
+                className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs leading-none font-medium text-slate-600 sm:min-h-11 sm:px-4 sm:py-2.5 sm:text-sm"
               >
                 重新选部位
               </Link>
@@ -111,22 +111,6 @@ function PlannerPageContent() {
             <h1 className="text-2xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-4xl">确认今天的动作</h1>
           </div>
 
-          <div className="sticky top-2 z-20 rounded-[22px] border border-slate-200 bg-white/95 p-2 shadow-[0_12px_32px_rgba(15,23,42,0.08)] backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-            <button
-              type="button"
-              onClick={() => {
-                const result = startWorkout();
-                setStatus(result.message);
-                if (result.ok) {
-                  router.push("/workout");
-                }
-              }}
-              className="inline-flex min-h-14 w-full items-center justify-center rounded-full bg-slate-950 px-5 py-3.5 text-lg font-semibold text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)] sm:min-h-16 sm:px-6 sm:py-4 sm:text-xl"
-            >
-              开始今天训练
-            </button>
-          </div>
-
           {status ? <div className="text-sm text-slate-500">{status}</div> : null}
 
           <PlannerEditor />
@@ -135,6 +119,40 @@ function PlannerPageContent() {
 
       <div className="hidden lg:block">
         <VoicePlanPanel />
+      </div>
+
+      <div className="pointer-events-none fixed inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 lg:hidden">
+        <div className="pointer-events-auto rounded-[24px] border border-slate-200 bg-white/96 p-2 shadow-[0_18px_40px_rgba(15,23,42,0.10)] backdrop-blur">
+          <button
+            type="button"
+            onClick={() => {
+              const result = startWorkout();
+              setStatus(result.message);
+              if (result.ok) {
+                router.push("/workout");
+              }
+            }}
+            className="inline-flex min-h-14 w-full items-center justify-center rounded-full bg-slate-950 px-5 py-3.5 text-lg font-semibold text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)]"
+          >
+            开始今天训练
+          </button>
+        </div>
+      </div>
+
+      <div className="hidden lg:block">
+        <button
+          type="button"
+          onClick={() => {
+            const result = startWorkout();
+            setStatus(result.message);
+            if (result.ok) {
+              router.push("/workout");
+            }
+          }}
+          className="inline-flex min-h-16 w-full items-center justify-center rounded-full bg-slate-950 px-6 py-4 text-xl font-semibold text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)]"
+        >
+          开始今天训练
+        </button>
       </div>
     </div>
   );
