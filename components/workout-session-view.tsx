@@ -26,6 +26,42 @@ export function WorkoutSessionView() {
     }
   };
 
+  const renderSetProgress = (options?: { highlightNext?: boolean; dark?: boolean }) => {
+    const total = Math.max(targetSets || 1, 1);
+    const highlightIndex = options?.highlightNext ? Math.min(completedSets.length, total - 1) : Math.min(Math.max(nextSetNumber - 1, 0), total - 1);
+    const completedCount = options?.highlightNext ? completedSets.length : Math.max(nextSetNumber - 1, 0);
+    const isDark = options?.dark;
+
+    return (
+      <div className="flex items-center justify-center gap-2">
+        {Array.from({ length: total }, (_, index) => {
+          const isCompleted = index < completedCount;
+          const isCurrent = index === highlightIndex;
+
+          return (
+            <div
+              key={`${currentExercise?.name || "set"}-${index}`}
+              className={[
+                "h-2.5 rounded-full transition-all sm:h-3",
+                isCompleted
+                  ? isDark
+                    ? "w-8 bg-white sm:w-10"
+                    : "w-8 bg-[var(--accent-strong)] sm:w-10"
+                  : isCurrent
+                    ? isDark
+                      ? "w-12 border border-white/70 bg-white/15 sm:w-14"
+                      : "w-12 border border-[var(--accent-strong)]/40 bg-[var(--accent-soft)] sm:w-14"
+                    : isDark
+                      ? "w-6 bg-white/15 sm:w-7"
+                      : "w-6 bg-slate-200 sm:w-7",
+              ].join(" ")}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
   useEffect(() => {
     if (!workout) return;
     const timer = window.setInterval(() => setNow(Date.now()), 500);
@@ -147,12 +183,13 @@ export function WorkoutSessionView() {
     return (
       <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-slate-900 bg-slate-950 px-4 py-6 text-white shadow-[0_28px_80px_rgba(15,23,42,0.30)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
         <div className="mx-auto grid w-full max-w-lg gap-5 text-center sm:max-w-xl sm:gap-8">
-          <div className="space-y-2 sm:space-y-3">
-            <h1 className="text-4xl font-semibold tracking-[-0.07em] sm:text-5xl">休息中</h1>
-            <div className="text-6xl font-semibold tracking-[-0.09em] text-white sm:text-8xl">{formatTimer(remaining)}</div>
-            <p className="text-sm leading-6 text-white/65 sm:text-base">下一组：第 {nextSetNumber} / {targetSets || 1} 组</p>
-            <div className="text-sm text-white/50">{currentExercise?.name}</div>
-          </div>
+        <div className="space-y-2 sm:space-y-3">
+          <h1 className="text-4xl font-semibold tracking-[-0.07em] sm:text-5xl">休息中</h1>
+          <div className="text-6xl font-semibold tracking-[-0.09em] text-white sm:text-8xl">{formatTimer(remaining)}</div>
+          {renderSetProgress({ highlightNext: true, dark: true })}
+          <p className="text-sm leading-6 text-white/65 sm:text-base">下一组</p>
+          <div className="text-sm text-white/50">{currentExercise?.name}</div>
+        </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <button
@@ -220,9 +257,8 @@ export function WorkoutSessionView() {
       <div className="mx-auto grid w-full max-w-md gap-4 pb-28 text-center sm:max-w-lg sm:gap-5 sm:pb-32">
         <div className="space-y-2">
           <div className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">训练进行中</div>
-          <h1 className="text-3xl font-semibold tracking-[-0.07em] text-slate-950 sm:text-4xl">
-            {currentExercise?.name} 第{nextSetNumber}-{targetSets || 1}组
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-[-0.07em] text-slate-950 sm:text-4xl">{currentExercise?.name}</h1>
+          {renderSetProgress()}
         </div>
 
         <div className="grid gap-3">
