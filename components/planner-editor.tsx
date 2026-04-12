@@ -1,6 +1,7 @@
 "use client";
 
 import { RefreshCcw } from "lucide-react";
+import { useMemo } from "react";
 
 import { useTrainingStore } from "@/store/training-store";
 
@@ -11,8 +12,20 @@ export function PlannerEditor() {
   const updatePlannerExercise = useTrainingStore((state) => state.updatePlannerExercise);
   const loadDefaultPlan = useTrainingStore((state) => state.loadDefaultPlan);
 
+  const orderedPlan = useMemo(
+    () =>
+      plan
+        .map((exercise, index) => ({ exercise, index }))
+        .sort((a, b) => {
+          if (a.exercise.selected === b.exercise.selected) return a.index - b.index;
+          return a.exercise.selected ? -1 : 1;
+        })
+        .map(({ exercise }) => exercise),
+    [plan],
+  );
+
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3 sm:gap-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-slate-950">{selectedMuscle} 动作确认</div>
@@ -29,11 +42,11 @@ export function PlannerEditor() {
       </div>
 
       <div className="grid gap-3">
-        {plan.map((exercise) => (
+        {orderedPlan.map((exercise) => (
           <div
             key={exercise.name}
             className={[
-              "rounded-[28px] border px-4 py-4 transition sm:px-5",
+              "rounded-[22px] border px-3.5 py-3.5 transition sm:rounded-[28px] sm:px-5 sm:py-4",
               exercise.selected
                 ? "border-[var(--accent-strong)] bg-white shadow-[0_18px_40px_rgba(241,90,34,0.08)]"
                 : "border-slate-200 bg-slate-50/80",
@@ -48,8 +61,8 @@ export function PlannerEditor() {
                   onChange={(event) => togglePlannerExercise(exercise.name, event.target.checked)}
                 />
                 <span>
-                  <span className="block text-lg font-semibold tracking-[-0.04em] text-slate-950">{exercise.name}</span>
-                  <span className="mt-1 block text-sm text-slate-500">{exercise.rest || "90"} 秒休息</span>
+                  <span className="block text-base font-semibold tracking-[-0.04em] text-slate-950 sm:text-lg">{exercise.name}</span>
+                  <span className="mt-1 block text-xs text-slate-500 sm:text-sm">{exercise.rest || "90"} 秒休息</span>
                 </span>
               </label>
 
@@ -65,7 +78,7 @@ export function PlannerEditor() {
                       value={exercise[item.field as "weight" | "sets" | "reps"]}
                       onChange={(event) => updatePlannerExercise(exercise.name, item.field as "weight" | "sets" | "reps", event.target.value)}
                       placeholder={item.placeholder}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-base text-slate-900 outline-none transition focus:border-[var(--accent-strong)]"
+                      className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[var(--accent-strong)] sm:py-3 sm:text-base"
                     />
                   </label>
                 ))}
