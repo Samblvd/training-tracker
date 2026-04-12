@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { href: "/", label: "开始", icon: LayoutDashboard },
     { href: "/history", label: "记录", icon: History },
   ];
-  const hideMobileNav = hasActiveWorkout && pathname === "/workout";
+  const hideMobileNav = pathname === "/planner" || (hasActiveWorkout && pathname === "/workout");
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-slate-900">

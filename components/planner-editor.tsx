@@ -33,24 +33,26 @@ export function PlannerEditor() {
   );
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       <div className="flex items-center justify-between gap-3">
         <div className="grid gap-1">
           <div className="text-sm font-semibold text-slate-950">动作确认</div>
           <div className="text-xs text-slate-500">预计 {estimatedMinutes} 分钟完成今天训练</div>
         </div>
-        <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">已选 {selectedExercises.length} 个</div>
+        <div className="rounded-full border border-white/80 bg-white/88 px-3 py-1 text-xs font-medium text-slate-500 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+          已选 {selectedExercises.length} 个
+        </div>
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid gap-4">
         {selectedExercises.map((exercise) => (
           <div
             key={exercise.name}
             className={[
-              "rounded-[22px] border px-3.5 py-3 transition sm:rounded-[28px] sm:px-5 sm:py-4",
+              "rounded-[24px] border px-3.5 py-3.5 shadow-[0_18px_36px_rgba(15,23,42,0.05)] transition sm:rounded-[30px] sm:px-5 sm:py-4.5",
               exercise.selected
-                ? "border-[var(--accent-strong)] bg-white shadow-[0_18px_40px_rgba(241,90,34,0.08)]"
-                : "border-slate-200 bg-slate-50/80",
+                ? "border-[var(--accent-strong)]/20 bg-white/92"
+                : "border-slate-200 bg-white/72",
             ].join(" ")}
           >
             <div className="grid gap-3">
@@ -89,7 +91,7 @@ export function PlannerEditor() {
                       value={exercise[item.field as "weight" | "sets" | "reps"]}
                       onChange={(event) => updatePlannerExercise(exercise.name, item.field as "weight" | "sets" | "reps", event.target.value)}
                       placeholder={item.placeholder}
-                      className="min-w-0 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-base font-medium text-slate-900 outline-none transition focus:border-[var(--accent-strong)]"
+                      className="min-w-0 w-full rounded-[18px] border border-slate-200/90 bg-slate-50/90 px-3 py-2.5 text-center text-base font-medium text-slate-900 outline-none transition focus:border-[var(--accent-strong)] focus:bg-white"
                     />
                   </label>
                 ))}
@@ -102,7 +104,7 @@ export function PlannerEditor() {
                     value={exercise.rest}
                     onChange={(event) => updatePlannerExercise(exercise.name, "rest", event.target.value)}
                     placeholder="90"
-                    className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-slate-900 outline-none transition focus:border-[var(--accent-strong)]"
+                    className="rounded-[18px] border border-slate-200/90 bg-slate-50/90 px-3 py-3 text-slate-900 outline-none transition focus:border-[var(--accent-strong)] focus:bg-white"
                   />
                 </label>
                 <label className="grid gap-1.5 text-sm">
@@ -111,7 +113,7 @@ export function PlannerEditor() {
                     value={exercise.intensity}
                     onChange={(event) => updatePlannerExercise(exercise.name, "intensity", event.target.value)}
                     placeholder="RPE 8"
-                    className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-slate-900 outline-none transition focus:border-[var(--accent-strong)]"
+                    className="rounded-[18px] border border-slate-200/90 bg-slate-50/90 px-3 py-3 text-slate-900 outline-none transition focus:border-[var(--accent-strong)] focus:bg-white"
                   />
                 </label>
                 <label className="grid gap-1.5 text-sm">
@@ -120,7 +122,7 @@ export function PlannerEditor() {
                     value={exercise.progression}
                     onChange={(event) => updatePlannerExercise(exercise.name, "progression", event.target.value)}
                     placeholder="做满后再加重"
-                    className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-slate-900 outline-none transition focus:border-[var(--accent-strong)]"
+                    className="rounded-[18px] border border-slate-200/90 bg-slate-50/90 px-3 py-3 text-slate-900 outline-none transition focus:border-[var(--accent-strong)] focus:bg-white"
                   />
                 </label>
               </div>
@@ -128,7 +130,7 @@ export function PlannerEditor() {
           </div>
         ))}
 
-        <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 px-3.5 py-3.5 sm:rounded-[28px] sm:px-5 sm:py-4">
+        <div className="rounded-[24px] border border-white/80 bg-white/86 px-3.5 py-3.5 shadow-[0_18px_36px_rgba(15,23,42,0.04)] sm:rounded-[30px] sm:px-5 sm:py-4">
           <button
             type="button"
             onClick={() => setShowAvailableExercises((current) => !current)}
@@ -138,19 +140,19 @@ export function PlannerEditor() {
               <div className="text-sm font-semibold text-slate-950">添加动作</div>
               <div className="mt-1 text-xs text-slate-500">还可以再加入 {availableExercises.length} 个动作</div>
             </div>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+            <span className="rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
               {showAvailableExercises ? "收起" : "展开"}
             </span>
           </button>
 
           {showAvailableExercises ? (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
               {availableExercises.map((exercise) => (
                 <button
                   key={exercise.name}
                   type="button"
                   onClick={() => togglePlannerExercise(exercise.name, true)}
-                  className="rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-left transition hover:border-[var(--accent-strong)] hover:bg-[var(--accent-soft)]"
+                  className="rounded-[18px] border border-slate-200/90 bg-slate-50/85 px-3.5 py-3 text-left transition hover:border-[var(--accent-strong)]/28 hover:bg-[var(--accent-soft)]"
                 >
                   <div className="text-sm font-semibold text-slate-950">{exercise.name}</div>
                   <div className="mt-1 text-xs text-slate-500">{exercise.rest || "90"} 秒休息</div>
