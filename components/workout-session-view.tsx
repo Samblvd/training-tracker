@@ -46,7 +46,7 @@ export function WorkoutSessionView() {
 
   if (!workout) {
     return (
-      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-4 py-6 sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-4 py-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
         <div className="mx-auto flex max-w-lg flex-col items-center gap-5 text-center sm:gap-6">
           <div className="space-y-2">
             <div className="text-sm font-semibold uppercase tracking-[0.32em] text-slate-400">Workout</div>
@@ -55,7 +55,7 @@ export function WorkoutSessionView() {
           </div>
           <Link
             href="/"
-            className="inline-flex min-h-14 min-w-[220px] items-center justify-center rounded-full bg-slate-950 px-7 py-3.5 text-lg sm:min-h-16 sm:min-w-[240px] sm:px-8 sm:py-4 sm:text-xl font-semibold text-white"
+            className="inline-flex min-h-14 min-w-[220px] items-center justify-center rounded-full bg-slate-950 px-7 py-3.5 text-lg font-semibold text-white sm:min-h-16 sm:min-w-[240px] sm:px-8 sm:py-4 sm:text-xl"
           >
             回到首页
           </Link>
@@ -66,7 +66,7 @@ export function WorkoutSessionView() {
 
   if (isWorkoutFinished && workout.summary) {
     return (
-      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-4 py-6 sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-4 py-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
         <div className="mx-auto grid w-full max-w-2xl gap-4 text-center sm:gap-6">
           <div className="space-y-2">
             <div className="text-sm font-semibold uppercase tracking-[0.32em] text-slate-400">Workout Summary</div>
@@ -113,13 +113,13 @@ export function WorkoutSessionView() {
                 clearWorkout();
                 router.push("/");
               }}
-              className="inline-flex min-h-14 min-w-[180px] items-center justify-center rounded-full bg-slate-950 px-6 py-3.5 text-lg sm:min-h-16 sm:min-w-[220px] sm:px-8 sm:py-4 sm:text-xl font-semibold text-white"
+              className="inline-flex min-h-14 min-w-[180px] items-center justify-center rounded-full bg-slate-950 px-6 py-3.5 text-lg font-semibold text-white sm:min-h-16 sm:min-w-[220px] sm:px-8 sm:py-4 sm:text-xl"
             >
               知道了
             </button>
             <Link
               href="/history"
-              className="inline-flex min-h-14 min-w-[180px] items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3.5 text-sm sm:min-h-16 sm:min-w-[220px] sm:px-8 sm:py-4 sm:text-base font-medium text-slate-700"
+              className="inline-flex min-h-14 min-w-[180px] items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3.5 text-sm font-medium text-slate-700 sm:min-h-16 sm:min-w-[220px] sm:px-8 sm:py-4 sm:text-base"
             >
               查看训练记录
             </Link>
@@ -131,29 +131,27 @@ export function WorkoutSessionView() {
 
   if (isResting) {
     return (
-      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-slate-900 bg-slate-950 px-4 py-6 sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10 text-white shadow-[0_28px_80px_rgba(15,23,42,0.30)]">
+      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-slate-900 bg-slate-950 px-4 py-6 text-white shadow-[0_28px_80px_rgba(15,23,42,0.30)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
         <div className="mx-auto grid w-full max-w-lg gap-5 text-center sm:max-w-xl sm:gap-8">
           <div className="space-y-2 sm:space-y-3">
             <div className="text-sm font-semibold uppercase tracking-[0.32em] text-white/45">Rest</div>
             <h1 className="text-4xl font-semibold tracking-[-0.07em] sm:text-5xl">休息中</h1>
             <div className="text-6xl font-semibold tracking-[-0.09em] text-white sm:text-8xl">{formatTimer(remaining)}</div>
-            <p className="text-sm leading-6 text-white/65 sm:text-base">
-              下一组：第 {nextSetNumber} / {targetSets || 1} 组
-            </p>
+            <p className="text-sm leading-6 text-white/65 sm:text-base">下一组：第 {nextSetNumber} / {targetSets || 1} 组</p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => skipRest()}
-              className="inline-flex min-h-14 items-center justify-center rounded-full bg-white px-5 py-3.5 text-base sm:min-h-16 sm:px-6 sm:py-4 sm:text-lg font-semibold text-slate-950"
+              className="inline-flex min-h-14 items-center justify-center rounded-full bg-white px-5 py-3.5 text-base font-semibold text-slate-950 sm:min-h-16 sm:px-6 sm:py-4 sm:text-lg"
             >
               跳过休息
             </button>
             <button
               type="button"
               onClick={() => extendRest(30)}
-              className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3.5 text-base sm:min-h-16 sm:px-6 sm:py-4 sm:text-lg font-semibold text-white"
+              className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3.5 text-base font-semibold text-white sm:min-h-16 sm:px-6 sm:py-4 sm:text-lg"
             >
               延长 30 秒
             </button>
@@ -165,7 +163,7 @@ export function WorkoutSessionView() {
 
   if (isExerciseDone && nextExercise) {
     return (
-      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-4 py-6 sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-4 py-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
         <div className="mx-auto grid w-full max-w-lg gap-4 text-center sm:max-w-xl sm:gap-6">
           <div className="space-y-2">
             <div className="text-sm font-semibold uppercase tracking-[0.32em] text-slate-400">Exercise Complete</div>
@@ -175,7 +173,7 @@ export function WorkoutSessionView() {
           <button
             type="button"
             onClick={() => nextWorkoutExercise()}
-            className="inline-flex min-h-16 items-center justify-center rounded-full bg-slate-950 px-8 py-4 text-xl font-semibold text-white"
+            className="inline-flex min-h-14 items-center justify-center rounded-full bg-slate-950 px-7 py-3.5 text-lg font-semibold text-white sm:min-h-16 sm:px-8 sm:py-4 sm:text-xl"
           >
             进入下一动作
           </button>
@@ -185,42 +183,35 @@ export function WorkoutSessionView() {
   }
 
   return (
-    <section className="flex min-h-[calc(100vh-7rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-3 py-5 sm:rounded-[36px] sm:px-4 sm:py-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:px-6 sm:py-10">
-      <div className="mx-auto grid w-full max-w-lg gap-4 text-center sm:max-w-xl sm:gap-6">
-        <div className="space-y-3">
-          <div className="text-sm font-semibold uppercase tracking-[0.32em] text-slate-400">Workout Live</div>
-          <h1 className="text-3xl font-semibold tracking-[-0.07em] text-slate-950 sm:text-5xl">{currentExercise?.name}</h1>
-          <div className="text-base text-slate-500 sm:text-lg">
-            第 {nextSetNumber} / {targetSets || 1} 组
-          </div>
+    <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-3 py-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-4 sm:py-8 lg:px-6 lg:py-10">
+      <div className="mx-auto grid w-full max-w-md gap-3 text-center sm:max-w-lg sm:gap-4">
+        <div className="space-y-1.5 sm:space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-400 sm:text-sm">Workout Live</div>
+          <h1 className="text-2xl font-semibold tracking-[-0.07em] text-slate-950 sm:text-3xl">{currentExercise?.name}</h1>
+          <div className="text-sm text-slate-500 sm:text-base">第 {nextSetNumber} / {targetSets || 1} 组</div>
+          <div className="text-xs text-slate-400 sm:text-sm">训练时长 {formatTimer(workoutDuration)}</div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 px-4 py-4 sm:rounded-[28px] sm:px-5 sm:py-5">
-            <div className="text-xs uppercase tracking-[0.24em] text-slate-400">本组计时</div>
-            <div className="mt-1.5 text-3xl font-semibold tracking-[-0.06em] text-slate-950 sm:mt-2 sm:text-4xl">{formatTimer(currentSetElapsed)}</div>
-          </div>
-          <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 px-4 py-4 sm:rounded-[28px] sm:px-5 sm:py-5">
-            <div className="text-xs uppercase tracking-[0.24em] text-slate-400">训练时长</div>
-            <div className="mt-1.5 text-3xl font-semibold tracking-[-0.06em] text-slate-950 sm:mt-2 sm:text-4xl">{formatTimer(workoutDuration)}</div>
-          </div>
+        <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 sm:rounded-[24px] sm:px-5 sm:py-4">
+          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">本组计时</div>
+          <div className="mt-1 text-3xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-4xl">{formatTimer(currentSetElapsed)}</div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="grid gap-2 text-left text-sm">
+        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+          <label className="grid gap-1.5 text-left text-sm">
             <span className="text-slate-500">重量</span>
             <input
               ref={weightRef}
               defaultValue={lastSet?.weight || currentExercise?.weight || "0"}
-              className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3 text-xl font-semibold text-slate-950 sm:rounded-[24px] sm:py-4 sm:text-2xl outline-none transition focus:border-[var(--accent-strong)]"
+              className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-2.5 text-lg font-semibold text-slate-950 outline-none transition focus:border-[var(--accent-strong)] sm:rounded-[20px] sm:py-3 sm:text-xl"
             />
           </label>
-          <label className="grid gap-2 text-left text-sm">
+          <label className="grid gap-1.5 text-left text-sm">
             <span className="text-slate-500">次数</span>
             <input
               ref={repsRef}
               defaultValue={lastSet?.reps || getRepInputValue(currentExercise?.reps) || "8"}
-              className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3 text-xl font-semibold text-slate-950 sm:rounded-[24px] sm:py-4 sm:text-2xl outline-none transition focus:border-[var(--accent-strong)]"
+              className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-2.5 text-lg font-semibold text-slate-950 outline-none transition focus:border-[var(--accent-strong)] sm:rounded-[20px] sm:py-3 sm:text-xl"
             />
           </label>
         </div>
@@ -234,7 +225,7 @@ export function WorkoutSessionView() {
               restSeconds: Number.parseInt(currentExercise?.rest || "90", 10) || 90,
             });
           }}
-          className="inline-flex min-h-20 items-center justify-center rounded-[28px] bg-slate-950 px-6 py-4 text-2xl sm:min-h-24 sm:rounded-[32px] sm:px-8 sm:py-6 sm:text-3xl font-semibold tracking-[-0.05em] text-white shadow-[0_24px_56px_rgba(15,23,42,0.24)] transition hover:scale-[1.01]"
+          className="inline-flex min-h-[4.5rem] items-center justify-center rounded-[24px] bg-slate-950 px-6 py-4 text-2xl font-semibold tracking-[-0.05em] text-white shadow-[0_24px_56px_rgba(15,23,42,0.24)] transition hover:scale-[1.01] sm:min-h-20 sm:rounded-[28px] sm:text-3xl"
         >
           完成本组
         </button>

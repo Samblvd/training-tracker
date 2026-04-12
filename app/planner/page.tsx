@@ -26,6 +26,7 @@ export default function PlannerPage() {
   const selectedMuscle = useTrainingStore((state) => state.selectedMuscle);
   const setSelectedMuscle = useTrainingStore((state) => state.setSelectedMuscle);
   const startWorkout = useTrainingStore((state) => state.startWorkout);
+  const loadDefaultPlan = useTrainingStore((state) => state.loadDefaultPlan);
   const workout = useTrainingStore((state) => state.workout);
   const [step, setStep] = useState<"select" | "confirm">("select");
   const [status, setStatus] = useState("");
@@ -41,19 +42,14 @@ export default function PlannerPage() {
 
     async function loadQuote() {
       try {
-        const response = await fetch(
-          "https://v1.hitokoto.cn/?c=d&c=e&c=k&encode=json&max_length=28",
-          {
-            cache: "no-store",
-          },
-        );
+        const response = await fetch("https://v1.hitokoto.cn/?c=d&c=e&c=k&encode=json&max_length=28", {
+          cache: "no-store",
+        });
         const payload = (await response.json()) as HitokotoResponse;
         if (cancelled) return;
         if (payload.hitokoto) {
           setQuote(payload.hitokoto);
-          setQuoteSource(
-            [payload.from_who, payload.from].filter(Boolean).join(" · ") || "一言",
-          );
+          setQuoteSource([payload.from_who, payload.from].filter(Boolean).join(" · ") || "一言");
           return;
         }
         throw new Error("empty quote");
@@ -95,8 +91,8 @@ export default function PlannerPage() {
 
   if (step === "select") {
     return (
-      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-4 py-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
-        <div className="mx-auto grid w-full max-w-3xl gap-6 text-center sm:gap-8">
+      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-4 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
+        <div className="mx-auto grid w-full max-w-3xl gap-5 text-center sm:gap-7">
           <div className="space-y-2">
             <div className="text-sm font-semibold uppercase tracking-[0.32em] text-slate-400">Step 1</div>
             <h1 className="text-3xl font-semibold tracking-[-0.07em] text-slate-950 sm:text-5xl">今天练哪里</h1>
@@ -104,7 +100,7 @@ export default function PlannerPage() {
             {quoteSource ? <div className="text-xs text-slate-400">{quoteSource}</div> : null}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             {muscles.map((muscle) => (
               <button
                 key={muscle}
@@ -114,14 +110,14 @@ export default function PlannerPage() {
                   setStep("confirm");
                 }}
                 className={[
-                  "rounded-[26px] border px-5 py-6 text-left transition sm:rounded-[32px] sm:px-6 sm:py-8",
+                  "rounded-[24px] border px-4 py-5 text-left transition sm:rounded-[32px] sm:px-6 sm:py-8",
                   selectedMuscle === muscle
                     ? "border-[var(--accent-strong)] bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-[0_18px_40px_rgba(241,90,34,0.10)]"
                     : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
                 ].join(" ")}
               >
                 <div className="text-xs uppercase tracking-[0.24em] opacity-60">训练部位</div>
-                <div className="mt-2 text-2xl font-semibold tracking-[-0.05em] sm:mt-3 sm:text-3xl">{muscle}</div>
+                <div className="mt-1.5 text-xl font-semibold tracking-[-0.05em] sm:mt-3 sm:text-3xl">{muscle}</div>
               </button>
             ))}
           </div>
@@ -131,29 +127,34 @@ export default function PlannerPage() {
   }
 
   return (
-    <div className="grid gap-5 sm:gap-6">
+    <div className="grid gap-5 pb-24 sm:gap-6 lg:pb-0">
       <section className="rounded-[28px] border border-white/70 bg-white/95 px-4 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:rounded-[36px] sm:px-6 sm:py-8">
-        <div className="grid gap-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
-              <div className="text-sm font-semibold uppercase tracking-[0.32em] text-slate-400">Step 2</div>
-              <h1 className="text-2xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-4xl">确认今天的动作</h1>
-              <p className="max-w-2xl text-sm leading-6 text-slate-500">
-                这里是今天的 {selectedMuscle} 训练卡片。把动作、重量、组数、次数调顺以后，就直接进入训练。
-              </p>
+        <div className="grid gap-4 sm:gap-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm font-semibold uppercase tracking-[0.32em] text-slate-400">Step 2</div>
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3">
+              <button
+                type="button"
+                onClick={() => loadDefaultPlan(selectedMuscle)}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 sm:px-4 sm:py-2.5 sm:text-sm"
+              >
+                恢复默认
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep("select")}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 sm:px-4 sm:py-2.5 sm:text-sm"
+              >
+                重新选部位
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setStep("select")}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600"
-            >
-              重新选部位
-            </button>
           </div>
 
-          <PlannerEditor />
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-4xl">确认今天的动作</h1>
+          </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="sticky top-2 z-20 rounded-[22px] border border-slate-200 bg-white/95 p-2 shadow-[0_12px_32px_rgba(15,23,42,0.08)] backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
             <button
               type="button"
               onClick={() => {
@@ -163,13 +164,15 @@ export default function PlannerPage() {
                   router.push("/workout");
                 }
               }}
-              className="inline-flex min-h-14 flex-1 items-center justify-center rounded-full bg-slate-950 px-5 py-3.5 text-lg font-semibold text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)] sm:min-h-16 sm:px-6 sm:py-4 sm:text-xl"
+              className="inline-flex min-h-14 w-full items-center justify-center rounded-full bg-slate-950 px-5 py-3.5 text-lg font-semibold text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)] sm:min-h-16 sm:px-6 sm:py-4 sm:text-xl"
             >
               开始今天训练
             </button>
           </div>
 
           {status ? <div className="text-sm text-slate-500">{status}</div> : null}
+
+          <PlannerEditor />
         </div>
       </section>
 

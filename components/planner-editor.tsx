@@ -1,16 +1,13 @@
 "use client";
 
-import { RefreshCcw } from "lucide-react";
 import { useMemo } from "react";
 
 import { useTrainingStore } from "@/store/training-store";
 
 export function PlannerEditor() {
-  const selectedMuscle = useTrainingStore((state) => state.selectedMuscle);
   const plan = useTrainingStore((state) => state.editorPlans[state.selectedMuscle]);
   const togglePlannerExercise = useTrainingStore((state) => state.togglePlannerExercise);
   const updatePlannerExercise = useTrainingStore((state) => state.updatePlannerExercise);
-  const loadDefaultPlan = useTrainingStore((state) => state.loadDefaultPlan);
 
   const orderedPlan = useMemo(
     () =>
@@ -25,21 +22,8 @@ export function PlannerEditor() {
   );
 
   return (
-    <div className="grid gap-3 sm:gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-slate-950">{selectedMuscle} 动作确认</div>
-          <div className="mt-1 text-sm text-slate-500">保留今天要做的动作，必要时改一下重量、组数和次数就好。</div>
-        </div>
-        <button
-          type="button"
-          onClick={() => loadDefaultPlan(selectedMuscle)}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-        >
-          <RefreshCcw className="h-4 w-4" />
-          恢复默认
-        </button>
-      </div>
+    <div className="grid gap-3">
+      <div className="text-sm font-semibold text-slate-950">动作确认</div>
 
       <div className="grid gap-3">
         {orderedPlan.map((exercise) => (
