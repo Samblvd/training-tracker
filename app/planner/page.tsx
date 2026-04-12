@@ -26,7 +26,7 @@ function PlannerPageContent() {
 
   const hasActiveWorkout = !!workout && !workout.finishedAt;
   const secondaryActionClass =
-    "inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs leading-none font-medium text-slate-600 whitespace-nowrap font-sans sm:min-h-11 sm:px-4 sm:py-2.5 sm:text-sm";
+    "flex min-h-10 w-full items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs leading-none font-medium text-slate-600 whitespace-nowrap font-sans sm:min-h-11 sm:px-4 sm:py-2.5 sm:text-sm";
 
   useEffect(() => {
     if (selectedMuscleFromUrl && selectedMuscleFromUrl !== selectedMuscle) {

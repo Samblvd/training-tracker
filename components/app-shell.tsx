@@ -100,27 +100,29 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="flex min-w-0 flex-1 flex-col gap-4 pb-20 pt-0 lg:gap-6 lg:py-1 lg:pb-0">{children}</main>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur lg:hidden">
-        <div className={cn("gap-1 px-2 py-2", hasActiveWorkout ? "grid grid-cols-2" : "grid grid-cols-2")}>
-          {mobileNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition",
-                  isActive ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]" : "text-slate-500",
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <div className="fixed inset-x-0 bottom-0 z-50 lg:hidden">
+        <nav className="border-t border-slate-200 bg-white/95 px-2 py-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] shadow-[0_-12px_30px_rgba(15,23,42,0.06)] backdrop-blur">
+          <div className={cn("grid grid-cols-2 gap-1")}>
+            {mobileNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition",
+                    isActive ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]" : "text-slate-500",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
     </div>
   );
 }
