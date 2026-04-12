@@ -139,7 +139,7 @@ export function WorkoutSessionView() {
     const highlightNotes = [...workout.summary.improvements, ...workout.summary.suggestions].slice(0, 2);
     const cautionNote = workout.summary.cautions[0];
     return (
-      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-white/95 px-4 py-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
+      <section className="flex min-h-[calc(100vh-8.5rem)] items-center justify-center rounded-[28px] border border-white/70 bg-[radial-gradient(circle_at_top,rgba(241,90,34,0.12),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] px-4 py-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-7rem)] sm:rounded-[36px] sm:px-6 sm:py-10">
         <div className="mx-auto grid w-full max-w-xl gap-4 text-center sm:gap-6">
           <div className="space-y-2">
             <div className="text-sm font-semibold uppercase tracking-[0.32em] text-slate-400">Workout Summary</div>
@@ -153,7 +153,10 @@ export function WorkoutSessionView() {
               { label: "完成组数", value: workout.summary.totalSets },
               { label: "总时长", value: formatTimer(finishedDuration) },
             ].map((item) => (
-              <div key={item.label} className="rounded-[22px] border border-slate-200 bg-slate-50/80 px-3.5 py-4 sm:rounded-[28px] sm:px-4 sm:py-5">
+              <div
+                key={item.label}
+                className="rounded-[22px] border border-white/80 bg-white/88 px-3.5 py-4 shadow-[0_16px_34px_rgba(15,23,42,0.06)] backdrop-blur sm:rounded-[28px] sm:px-4 sm:py-5"
+              >
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{item.label}</div>
                 <div className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-slate-950">{item.value}</div>
               </div>
@@ -162,11 +165,11 @@ export function WorkoutSessionView() {
 
           <div className="grid gap-3 text-left">
             {highlightNotes.length ? (
-              <div className="rounded-[22px] border border-slate-200 bg-white px-3.5 py-3.5 sm:rounded-[28px] sm:px-4 sm:py-4">
+              <div className="rounded-[22px] border border-[var(--accent-strong)]/12 bg-white/92 px-3.5 py-3.5 shadow-[0_16px_34px_rgba(241,90,34,0.06)] sm:rounded-[28px] sm:px-4 sm:py-4">
                 <div className="text-sm font-semibold text-slate-950">下次继续这样练</div>
                 <div className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
                   {highlightNotes.map((item) => (
-                    <div key={item} className="rounded-2xl bg-slate-50 px-3 py-2">
+                    <div key={item} className="rounded-2xl bg-[var(--accent-soft)] px-3 py-2 text-[var(--accent-strong)]">
                       {item}
                     </div>
                   ))}
@@ -178,7 +181,7 @@ export function WorkoutSessionView() {
                 {cautionNote}
               </div>
             ) : null}
-            <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 px-3.5 py-3 text-sm leading-6 text-slate-600 sm:rounded-[28px] sm:px-4 sm:py-4">
+            <div className="rounded-[22px] border border-slate-200/80 bg-white/80 px-3.5 py-3 text-sm leading-6 text-slate-600 shadow-[0_12px_28px_rgba(15,23,42,0.04)] sm:rounded-[28px] sm:px-4 sm:py-4">
               总训练量 {workout.summary.totalVolume}，记录已经保存到训练历史里。
             </div>
           </div>
@@ -189,7 +192,7 @@ export function WorkoutSessionView() {
               clearWorkout();
               router.push("/");
             }}
-            className="inline-flex min-h-14 items-center justify-center rounded-full bg-slate-950 px-6 py-3.5 text-lg font-semibold text-white sm:min-h-16 sm:px-8 sm:py-4 sm:text-xl"
+            className="inline-flex min-h-14 items-center justify-center rounded-full bg-slate-950 px-6 py-3.5 text-lg font-semibold text-white shadow-[0_22px_48px_rgba(15,23,42,0.24)] transition active:scale-[0.985] active:translate-y-[1px] sm:min-h-16 sm:px-8 sm:py-4 sm:text-xl"
           >
             知道了
           </button>
@@ -217,20 +220,20 @@ export function WorkoutSessionView() {
                 triggerHaptic();
                 skipRest();
               }}
-              className="inline-flex min-h-14 items-center justify-center rounded-full bg-white px-5 py-3.5 text-base font-semibold text-slate-950 sm:min-h-16 sm:px-6 sm:py-4 sm:text-lg"
-            >
-              跳过休息
-            </button>
+            className="inline-flex min-h-14 items-center justify-center rounded-full bg-white px-5 py-3.5 text-base font-semibold text-slate-950 shadow-[0_14px_28px_rgba(255,255,255,0.12)] transition active:scale-[0.985] active:translate-y-[1px] sm:min-h-16 sm:px-6 sm:py-4 sm:text-lg"
+          >
+            跳过休息
+          </button>
             <button
               type="button"
               onClick={() => {
                 triggerHaptic(14);
                 extendRest(30);
               }}
-              className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3.5 text-base font-semibold text-white sm:min-h-16 sm:px-6 sm:py-4 sm:text-lg"
-            >
-              延长 30 秒
-            </button>
+            className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3.5 text-base font-semibold text-white transition active:scale-[0.985] active:translate-y-[1px] sm:min-h-16 sm:px-6 sm:py-4 sm:text-lg"
+          >
+            延长 30 秒
+          </button>
           </div>
         </div>
       </section>
@@ -261,7 +264,7 @@ export function WorkoutSessionView() {
               triggerHaptic();
               nextWorkoutExercise();
             }}
-            className="inline-flex min-h-14 items-center justify-center rounded-full bg-slate-950 px-7 py-3.5 text-lg font-semibold text-white sm:min-h-16 sm:px-8 sm:py-4 sm:text-xl"
+            className="inline-flex min-h-14 items-center justify-center rounded-full bg-slate-950 px-7 py-3.5 text-lg font-semibold text-white shadow-[0_22px_48px_rgba(15,23,42,0.2)] transition active:scale-[0.985] active:translate-y-[1px] sm:min-h-16 sm:px-8 sm:py-4 sm:text-xl"
           >
             进入下一动作
           </button>
@@ -300,7 +303,7 @@ export function WorkoutSessionView() {
             />
           </label>
 
-          <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3.5 sm:rounded-[24px] sm:px-5 sm:py-4">
+          <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3.5 shadow-[0_14px_30px_rgba(15,23,42,0.04)] sm:rounded-[24px] sm:px-5 sm:py-4">
             <div className="text-sm text-slate-500">计时</div>
             <div className="mt-1 text-4xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-5xl">{formatTimer(currentSetElapsed)}</div>
           </div>
@@ -308,7 +311,7 @@ export function WorkoutSessionView() {
       </div>
 
       <div className="pointer-events-none absolute inset-x-3 bottom-3 sm:inset-x-4 sm:bottom-4 lg:inset-x-6">
-        <div className="pointer-events-auto rounded-[26px] border border-slate-200 bg-white/96 p-2 shadow-[0_24px_56px_rgba(15,23,42,0.12)] backdrop-blur">
+        <div className="pointer-events-auto rounded-[26px] border border-white/80 bg-white/92 p-2 shadow-[0_28px_64px_rgba(15,23,42,0.14)] backdrop-blur">
           <button
             type="button"
             onClick={() => {
@@ -319,7 +322,7 @@ export function WorkoutSessionView() {
                 restSeconds: Number.parseInt(currentExercise?.rest || "90", 10) || 90,
               });
             }}
-            className="inline-flex min-h-[4.5rem] w-full items-center justify-center rounded-[22px] bg-slate-950 px-6 py-4 text-2xl font-semibold tracking-[-0.05em] text-white shadow-[0_18px_40px_rgba(15,23,42,0.24)] transition active:scale-[0.99] sm:min-h-20 sm:rounded-[26px] sm:text-3xl"
+            className="inline-flex min-h-[4.5rem] w-full items-center justify-center rounded-[22px] bg-[linear-gradient(180deg,#111827,#020617)] px-6 py-4 text-2xl font-semibold tracking-[-0.05em] text-white shadow-[0_24px_48px_rgba(15,23,42,0.28)] transition active:translate-y-[1px] active:scale-[0.985] sm:min-h-20 sm:rounded-[26px] sm:text-3xl"
           >
             完成本组
           </button>
