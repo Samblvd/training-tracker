@@ -100,12 +100,13 @@ function PlannerPageContent() {
               >
                 恢复默认
               </button>
-              <Link
-                href="/planner"
+              <button
+                type="button"
+                onClick={() => router.push("/planner")}
                 className={secondaryActionClass}
               >
                 重新选部位
-              </Link>
+              </button>
             </div>
           </div>
 
