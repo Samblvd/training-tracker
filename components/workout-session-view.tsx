@@ -33,29 +33,48 @@ export function WorkoutSessionView() {
     const isDark = options?.dark;
 
     return (
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex items-center justify-center gap-2.5">
         {Array.from({ length: total }, (_, index) => {
           const isCompleted = index < completedCount;
           const isCurrent = index === highlightIndex;
+          const isIdle = !isCompleted && !isCurrent;
 
           return (
             <div
               key={`${currentExercise?.name || "set"}-${index}`}
               className={[
-                "h-2.5 rounded-full transition-all sm:h-3",
+                "relative flex items-center justify-center rounded-full transition-all duration-300 sm:h-3",
                 isCompleted
                   ? isDark
-                    ? "w-8 bg-white sm:w-10"
-                    : "w-8 bg-[var(--accent-strong)] sm:w-10"
+                    ? "h-2.5 w-8 bg-white shadow-[0_0_0_1px_rgba(255,255,255,0.18)] sm:w-10"
+                    : "h-2.5 w-8 bg-[var(--accent-strong)] shadow-[0_6px_16px_rgba(241,90,34,0.20)] sm:w-10"
                   : isCurrent
                     ? isDark
-                      ? "w-12 border border-white/70 bg-white/15 sm:w-14"
-                      : "w-12 border border-[var(--accent-strong)]/40 bg-[var(--accent-soft)] sm:w-14"
+                      ? "h-3 w-14 border border-white/65 bg-white/12 shadow-[0_0_0_6px_rgba(255,255,255,0.05)] sm:w-16"
+                      : "h-3 w-14 border border-[var(--accent-strong)]/28 bg-[var(--accent-soft)] shadow-[0_0_0_6px_rgba(241,90,34,0.08)] sm:w-16"
                     : isDark
-                      ? "w-6 bg-white/15 sm:w-7"
-                      : "w-6 bg-slate-200 sm:w-7",
+                      ? "h-2.5 w-6 bg-white/15 sm:w-7"
+                      : "h-2.5 w-6 bg-slate-200 sm:w-7",
               ].join(" ")}
-            />
+            >
+              {isCurrent ? (
+                <span
+                  className={[
+                    "h-1.5 w-1.5 rounded-full sm:h-2 sm:w-2",
+                    isDark ? "bg-white" : "bg-[var(--accent-strong)]",
+                  ].join(" ")}
+                />
+              ) : isCompleted ? (
+                <span
+                  className={[
+                    "h-1 w-1 rounded-full opacity-90 sm:h-1.5 sm:w-1.5",
+                    isDark ? "bg-slate-950" : "bg-white",
+                  ].join(" ")}
+                />
+              ) : isIdle ? (
+                <span className="sr-only">未开始</span>
+              ) : null}
+            </div>
           );
         })}
       </div>
@@ -259,6 +278,7 @@ export function WorkoutSessionView() {
           <div className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">训练进行中</div>
           <h1 className="text-3xl font-semibold tracking-[-0.07em] text-slate-950 sm:text-4xl">{currentExercise?.name}</h1>
           {renderSetProgress()}
+          <div className="text-sm text-slate-400">当前组</div>
         </div>
 
         <div className="grid gap-3">
