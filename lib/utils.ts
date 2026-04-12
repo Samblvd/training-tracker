@@ -210,6 +210,7 @@ export function selectedPlannerExercises(plan: PlannerExercise[]) {
 
 export function buildWorkoutSession(muscle: Muscle, exercises: ExercisePlanItem[]): WorkoutSession {
   const startedAt = new Date().toISOString();
+  const now = Date.now();
   return {
     muscle,
     exercises,
@@ -217,7 +218,8 @@ export function buildWorkoutSession(muscle: Muscle, exercises: ExercisePlanItem[
     setDone: 0,
     restTotal: Number.parseInt(exercises[0]?.rest || "90", 10) || 90,
     restEndAt: null,
-    currentSetStartedAt: Date.now(),
+    currentSetStartedAt: now,
+    lastAutoSavedAt: now,
     startedAt,
     finishedAt: "",
     sessionLog: exercises.map((exercise) => ({

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { formatTimer } from "@/lib/utils";
@@ -17,7 +16,6 @@ const FALLBACK_QUOTES = [
 ];
 
 export function HomeTrainingFocus() {
-  const router = useRouter();
   const workout = useTrainingStore((state) => state.workout);
   const [now, setNow] = useState(0);
   const [quote] = useState(() => FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)]);
@@ -75,13 +73,12 @@ export function HomeTrainingFocus() {
             </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => router.push("/planner")}
+          <Link
+            href="/planner"
             className="inline-flex min-h-16 min-w-[220px] items-center justify-center rounded-full bg-slate-950 px-8 py-4 text-xl font-semibold tracking-[-0.05em] text-white shadow-[0_28px_56px_rgba(15,23,42,0.28)] transition hover:scale-[1.01] sm:min-h-20 sm:min-w-[280px] sm:px-10 sm:py-6 sm:text-2xl"
           >
             开始训练
-          </button>
+          </Link>
         )}
       </div>
     </section>

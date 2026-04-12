@@ -1,24 +1,36 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { PlannerEditor } from "@/components/planner-editor";
 import { VoicePlanPanel } from "@/components/voice-plan-panel";
 import { muscles } from "@/lib/utils";
 import { useTrainingStore } from "@/store/training-store";
 
-export default function PlannerPage() {
+function PlannerPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const selectedMuscle = useTrainingStore((state) => state.selectedMuscle);
   const setSelectedMuscle = useTrainingStore((state) => state.setSelectedMuscle);
   const startWorkout = useTrainingStore((state) => state.startWorkout);
   const loadDefaultPlan = useTrainingStore((state) => state.loadDefaultPlan);
   const workout = useTrainingStore((state) => state.workout);
-  const [step, setStep] = useState<"select" | "confirm">("select");
   const [status, setStatus] = useState("");
+  const selectedMuscleFromUrl = useMemo(() => {
+    const value = searchParams.get("muscle");
+    return muscles.find((muscle) => muscle === value) || null;
+  }, [searchParams]);
+  const step = selectedMuscleFromUrl ? "confirm" : "select";
 
   const hasActiveWorkout = !!workout && !workout.finishedAt;
+
+  useEffect(() => {
+    if (selectedMuscleFromUrl && selectedMuscleFromUrl !== selectedMuscle) {
+      setSelectedMuscle(selectedMuscleFromUrl);
+    }
+  }, [selectedMuscle, selectedMuscleFromUrl, setSelectedMuscle]);
 
   if (hasActiveWorkout) {
     return (
@@ -52,15 +64,11 @@ export default function PlannerPage() {
 
           <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             {muscles.map((muscle) => (
-              <button
+              <Link
                 key={muscle}
-                type="button"
-                onClick={() => {
-                  setSelectedMuscle(muscle);
-                  setStep("confirm");
-                }}
+                href={`/planner?muscle=${encodeURIComponent(muscle)}`}
                 className={[
-                  "rounded-[24px] border px-4 py-5 text-left transition sm:rounded-[32px] sm:px-6 sm:py-8",
+                  "block rounded-[24px] border px-4 py-5 text-left transition sm:rounded-[32px] sm:px-6 sm:py-8",
                   selectedMuscle === muscle
                     ? "border-[var(--accent-strong)] bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-[0_18px_40px_rgba(241,90,34,0.10)]"
                     : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
@@ -68,7 +76,7 @@ export default function PlannerPage() {
               >
                 <div className="text-xs uppercase tracking-[0.24em] opacity-60">训练部位</div>
                 <div className="mt-1.5 text-xl font-semibold tracking-[-0.05em] sm:mt-3 sm:text-3xl">{muscle}</div>
-              </button>
+              </Link>
             ))}
           </div>
         </div>
@@ -90,13 +98,12 @@ export default function PlannerPage() {
               >
                 恢复默认
               </button>
-              <button
-                type="button"
-                onClick={() => setStep("select")}
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 sm:px-4 sm:py-2.5 sm:text-sm"
+              <Link
+                href="/planner"
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs font-medium text-slate-600 sm:px-4 sm:py-2.5 sm:text-sm"
               >
                 重新选部位
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -130,5 +137,13 @@ export default function PlannerPage() {
         <VoicePlanPanel />
       </div>
     </div>
+  );
+}
+
+export default function PlannerPage() {
+  return (
+    <Suspense fallback={null}>
+      <PlannerPageContent />
+    </Suspense>
   );
 }

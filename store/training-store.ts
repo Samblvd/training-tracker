@@ -186,12 +186,38 @@ function normalizeLegacyWorkout(raw: Record<string, unknown>): WorkoutSession | 
     exIdx: Number.parseInt(String(raw.exIdx || "0"), 10) || 0,
     setDone: Number.parseInt(String(raw.setDone || "0"), 10) || 0,
     restTotal: Number.parseInt(String(raw.restTotal || "90"), 10) || 90,
-    restEndAt: null,
-    currentSetStartedAt: Date.now(),
+    restEndAt: raw.restEndAt ? Number.parseInt(String(raw.restEndAt), 10) || null : null,
+    currentSetStartedAt: Number.parseInt(String(raw.currentSetStartedAt || "0"), 10) || Date.now(),
+    lastAutoSavedAt: Number.parseInt(String(raw.lastAutoSavedAt || "0"), 10) || Date.now(),
     startedAt: typeof raw.startedAt === "string" ? raw.startedAt : new Date().toISOString(),
     finishedAt: typeof raw.finishedAt === "string" ? raw.finishedAt : "",
     sessionLog,
-    savedRecordId: "",
+    summary:
+      raw.summary && typeof raw.summary === "object"
+        ? {
+            totalExercises: Number.parseInt(String((raw.summary as Record<string, unknown>).totalExercises || "0"), 10) || 0,
+            totalSets: Number.parseInt(String((raw.summary as Record<string, unknown>).totalSets || "0"), 10) || 0,
+            totalVolume: String((raw.summary as Record<string, unknown>).totalVolume || "0"),
+            improvements: Array.isArray((raw.summary as Record<string, unknown>).improvements)
+              ? ((raw.summary as Record<string, unknown>).improvements as unknown[]).map((item) => String(item))
+              : [],
+            cautions: Array.isArray((raw.summary as Record<string, unknown>).cautions)
+              ? ((raw.summary as Record<string, unknown>).cautions as unknown[]).map((item) => String(item))
+              : [],
+            suggestions: Array.isArray((raw.summary as Record<string, unknown>).suggestions)
+              ? ((raw.summary as Record<string, unknown>).suggestions as unknown[]).map((item) => String(item))
+              : [],
+          }
+        : undefined,
+    savedRecordId: typeof raw.savedRecordId === "string" ? raw.savedRecordId : "",
+  };
+}
+
+function touchWorkout(workout: WorkoutSession, patch: Partial<WorkoutSession> = {}): WorkoutSession {
+  return {
+    ...workout,
+    ...patch,
+    lastAutoSavedAt: Date.now(),
   };
 }
 
@@ -364,13 +390,19 @@ export const useTrainingStore = create<TrainingState>()(
           rest: exercise.rest || "90",
         }));
         if (!selected.length) return { ok: false, message: "先在计划里勾选动作，再开始训练" };
-        set({ workout: buildWorkoutSession(state.selectedMuscle, selected) });
+        set({ workout: touchWorkout(buildWorkoutSession(state.selectedMuscle, selected)) });
         return { ok: true, message: "训练已开始" };
       },
       completeWorkoutSet: ({ weight, reps, restSeconds }) =>
         set((state) => {
           if (!state.workout) return {};
-          const workout = { ...state.workout };
+          const workout = {
+            ...state.workout,
+            sessionLog: state.workout.sessionLog.map((item) => ({
+              ...item,
+              completedSets: item.completedSets.slice(),
+            })),
+          };
           const currentLog = workout.sessionLog[workout.exIdx];
           if (!currentLog) return {};
           currentLog.completedSets = currentLog.completedSets.concat({
@@ -388,19 +420,22 @@ export const useTrainingStore = create<TrainingState>()(
 
           if (!isCurrentExerciseComplete) {
             const nextSetStartsAt = Date.now() + restSeconds * 1000;
-            workout.restEndAt = nextSetStartsAt;
-            workout.currentSetStartedAt = nextSetStartsAt;
-            return { workout };
+            return {
+              workout: touchWorkout(workout, {
+                restEndAt: nextSetStartsAt,
+                currentSetStartedAt: nextSetStartsAt,
+              }),
+            };
           }
 
           workout.restEndAt = null;
 
           if (!isLastExercise) {
-            return { workout };
+            return { workout: touchWorkout(workout, { restEndAt: null }) };
           }
 
           const finishedWorkout: WorkoutSession = {
-            ...workout,
+            ...touchWorkout(workout, { restEndAt: null }),
             finishedAt: new Date().toISOString(),
           };
           const summary = buildWorkoutSummary(state.records, finishedWorkout);
@@ -412,6 +447,7 @@ export const useTrainingStore = create<TrainingState>()(
               summary,
               savedRecordId: record.id,
               restEndAt: null,
+              lastAutoSavedAt: Date.now(),
             },
             records: [record, ...state.records].sort(compareDatesDesc),
           };
@@ -420,23 +456,21 @@ export const useTrainingStore = create<TrainingState>()(
         set((state) => {
           if (!state.workout) return {};
           return {
-            workout: {
-              ...state.workout,
+            workout: touchWorkout(state.workout, {
               restTotal: state.workout.restTotal + seconds,
               restEndAt: (state.workout.restEndAt || Date.now()) + seconds * 1000,
               currentSetStartedAt: state.workout.currentSetStartedAt + seconds * 1000,
-            },
+            }),
           };
         }),
       skipRest: () =>
         set((state) =>
           state.workout
             ? {
-                workout: {
-                  ...state.workout,
+                workout: touchWorkout(state.workout, {
                   restEndAt: null,
                   currentSetStartedAt: Date.now(),
-                },
+                }),
               }
             : {},
         ),
@@ -446,14 +480,13 @@ export const useTrainingStore = create<TrainingState>()(
           const nextIdx = state.workout.exIdx + 1;
           if (nextIdx >= state.workout.exercises.length) return {};
           return {
-            workout: {
-              ...state.workout,
+            workout: touchWorkout(state.workout, {
               exIdx: nextIdx,
               setDone: state.workout.sessionLog[nextIdx].completedSets.length,
               restTotal: Number.parseInt(state.workout.exercises[nextIdx].rest || "90", 10) || 90,
               restEndAt: null,
               currentSetStartedAt: Date.now(),
-            },
+            }),
           };
         }),
       skipCurrentExercise: () =>
@@ -462,14 +495,13 @@ export const useTrainingStore = create<TrainingState>()(
           const nextIdx = state.workout.exIdx + 1;
           if (nextIdx >= state.workout.exercises.length) return {};
           return {
-            workout: {
-              ...state.workout,
+            workout: touchWorkout(state.workout, {
               exIdx: nextIdx,
               setDone: state.workout.sessionLog[nextIdx].completedSets.length,
               restTotal: Number.parseInt(state.workout.exercises[nextIdx].rest || "90", 10) || 90,
               restEndAt: null,
               currentSetStartedAt: Date.now(),
-            },
+            }),
           };
         }),
       finishWorkout: () => {
@@ -488,6 +520,7 @@ export const useTrainingStore = create<TrainingState>()(
             summary,
             savedRecordId: record.id,
             restEndAt: null,
+            lastAutoSavedAt: Date.now(),
           },
           records: [record, ...state.records].sort(compareDatesDesc),
         });
@@ -499,8 +532,22 @@ export const useTrainingStore = create<TrainingState>()(
     }),
     {
       name: "training-tracker-v2",
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState) => {
+        const state = persistedState as Partial<TrainingState> & {
+          workout?: WorkoutSession | Record<string, unknown> | null;
+        };
+        if (!state?.workout) return persistedState as TrainingState;
+        const workout =
+          "exercises" in state.workout
+            ? normalizeLegacyWorkout(state.workout as Record<string, unknown>)
+            : null;
+        return {
+          ...state,
+          workout,
+        } as TrainingState;
+      },
       partialize: (state) => ({
         selectedMuscle: state.selectedMuscle,
         plannerDate: state.plannerDate,

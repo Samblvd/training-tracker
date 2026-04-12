@@ -43,6 +43,15 @@ export function WorkoutSessionView() {
     if (!workout?.startedAt) return 0;
     return Math.max(0, Math.floor((effectiveNow - new Date(workout.startedAt).getTime()) / 1000));
   }, [effectiveNow, workout]);
+  const autoSavedText = (() => {
+    if (!workout?.lastAutoSavedAt) return "已自动保存";
+    const diff = Math.max(0, Math.floor((effectiveNow - workout.lastAutoSavedAt) / 1000));
+    if (diff < 2) return "已自动保存";
+    if (diff < 60) return `${diff} 秒前已自动保存`;
+    const mins = Math.floor(diff / 60);
+    if (mins < 60) return `${mins} 分钟前已自动保存`;
+    return "已自动保存";
+  })();
 
   if (!workout) {
     return (
@@ -190,6 +199,7 @@ export function WorkoutSessionView() {
           <h1 className="text-2xl font-semibold tracking-[-0.07em] text-slate-950 sm:text-3xl">{currentExercise?.name}</h1>
           <div className="text-sm text-slate-500 sm:text-base">第 {nextSetNumber} / {targetSets || 1} 组</div>
           <div className="text-xs text-slate-400 sm:text-sm">训练时长 {formatTimer(workoutDuration)}</div>
+          <div className="text-[11px] text-emerald-600/90 sm:text-xs">{autoSavedText}</div>
         </div>
 
         <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 sm:rounded-[24px] sm:px-5 sm:py-4">
