@@ -68,6 +68,7 @@ export interface WorkoutSession {
   setDone: number;
   restTotal: number;
   restEndAt: number | null;
+  currentSetStartedAt: number;
   startedAt: string;
   finishedAt: string;
   sessionLog: SessionLogItem[];

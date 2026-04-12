@@ -187,6 +187,7 @@ function normalizeLegacyWorkout(raw: Record<string, unknown>): WorkoutSession | 
     setDone: Number.parseInt(String(raw.setDone || "0"), 10) || 0,
     restTotal: Number.parseInt(String(raw.restTotal || "90"), 10) || 90,
     restEndAt: null,
+    currentSetStartedAt: Date.now(),
     startedAt: typeof raw.startedAt === "string" ? raw.startedAt : new Date().toISOString(),
     finishedAt: typeof raw.finishedAt === "string" ? raw.finishedAt : "",
     sessionLog,
@@ -386,7 +387,9 @@ export const useTrainingStore = create<TrainingState>()(
           workout.restTotal = restSeconds;
 
           if (!isCurrentExerciseComplete) {
-            workout.restEndAt = Date.now() + restSeconds * 1000;
+            const nextSetStartsAt = Date.now() + restSeconds * 1000;
+            workout.restEndAt = nextSetStartsAt;
+            workout.currentSetStartedAt = nextSetStartsAt;
             return { workout };
           }
 
@@ -421,11 +424,22 @@ export const useTrainingStore = create<TrainingState>()(
               ...state.workout,
               restTotal: state.workout.restTotal + seconds,
               restEndAt: (state.workout.restEndAt || Date.now()) + seconds * 1000,
+              currentSetStartedAt: state.workout.currentSetStartedAt + seconds * 1000,
             },
           };
         }),
       skipRest: () =>
-        set((state) => (state.workout ? { workout: { ...state.workout, restEndAt: null } } : {})),
+        set((state) =>
+          state.workout
+            ? {
+                workout: {
+                  ...state.workout,
+                  restEndAt: null,
+                  currentSetStartedAt: Date.now(),
+                },
+              }
+            : {},
+        ),
       nextWorkoutExercise: () =>
         set((state) => {
           if (!state.workout) return {};
@@ -438,6 +452,7 @@ export const useTrainingStore = create<TrainingState>()(
               setDone: state.workout.sessionLog[nextIdx].completedSets.length,
               restTotal: Number.parseInt(state.workout.exercises[nextIdx].rest || "90", 10) || 90,
               restEndAt: null,
+              currentSetStartedAt: Date.now(),
             },
           };
         }),
@@ -453,6 +468,7 @@ export const useTrainingStore = create<TrainingState>()(
               setDone: state.workout.sessionLog[nextIdx].completedSets.length,
               restTotal: Number.parseInt(state.workout.exercises[nextIdx].rest || "90", 10) || 90,
               restEndAt: null,
+              currentSetStartedAt: Date.now(),
             },
           };
         }),

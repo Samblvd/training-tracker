@@ -23,20 +23,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [now, setNow] = useState(0);
 
   useEffect(() => {
-    if (!workout?.restEndAt) return;
+    if (!workout) return;
     const timer = window.setInterval(() => setNow(Date.now()), 500);
     return () => window.clearInterval(timer);
-  }, [workout?.restEndAt]);
+  }, [workout]);
 
   const isWorkoutComplete =
     !!workout &&
     workout.exercises.length > 0 &&
     workout.sessionLog.every((item) => item.completedSets.length >= (Number.parseInt(item.targetSets || "0", 10) || 0));
   const hasActiveWorkout = !!workout && !isWorkoutComplete;
-  const currentExercise = workout?.exercises[workout.exIdx];
-  const currentLog = workout?.sessionLog[workout.exIdx];
-  const completedSets = currentLog?.completedSets.length || 0;
-  const targetSets = Number.parseInt(currentExercise?.sets || "0", 10) || 0;
   const timerBase = now || ((workout?.restEndAt || 0) - (workout?.restTotal || 0) * 1000);
   const remaining = workout?.restEndAt ? Math.max(0, Math.ceil((workout.restEndAt - timerBase) / 1000)) : 0;
   const isResting = remaining > 0;
@@ -44,41 +40,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   const mobileNavItems = hasActiveWorkout
     ? [
         { href: "/", label: "状态", icon: LayoutDashboard },
-        { href: "/workout", label: isResting ? formatTimer(remaining) : "倒计时", icon: TimerReset },
+        { href: "/workout", label: isResting ? formatTimer(remaining) : "训练中", icon: TimerReset },
       ]
-    : navItems;
+    : [
+        { href: "/", label: "开始", icon: LayoutDashboard },
+        { href: "/history", label: "记录", icon: History },
+      ];
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-slate-900">
-      <div className="lg:hidden">
-        <div className="sticky top-0 z-20 border-b border-white/70 bg-[rgba(255,250,245,0.92)] px-4 py-3 backdrop-blur">
-          {hasActiveWorkout ? (
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="truncate text-lg font-semibold tracking-[-0.04em] text-slate-950">{currentExercise?.name || "训练中"}</div>
-                <div className="text-xs text-slate-500">
-                  {selectedMuscle} · 第 {Math.min(completedSets + 1, targetSets || 1)} / {targetSets || 1} 组
-                </div>
-              </div>
-              <div className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
-                {isResting ? formatTimer(remaining) : "训练中"}
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="text-lg font-semibold tracking-[-0.04em] text-slate-950">训练助手</div>
-              <div className="text-xs text-slate-500">{selectedMuscle} · 准备开始</div>
-            </div>
-          )}
-        </div>
-      </div>
-
       <div className="mx-auto flex min-h-screen max-w-[1600px] flex-col gap-6 px-4 py-4 pb-24 md:px-6 lg:flex-row lg:gap-8 lg:px-8 lg:py-6 lg:pb-6">
         <aside className="hidden w-full shrink-0 rounded-[32px] border border-white/60 bg-[radial-gradient(circle_at_top_left,rgba(241,90,34,0.16),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.94),rgba(255,250,245,0.88))] p-5 shadow-[0_32px_90px_rgba(15,23,42,0.09)] backdrop-blur lg:sticky lg:top-6 lg:flex lg:h-[calc(100vh-48px)] lg:w-[280px]">
           <div className="flex h-full flex-col gap-6">
             <div className="space-y-2">
               <h1 className="text-3xl font-semibold tracking-[-0.05em] text-slate-950">训练助手</h1>
-              <p className="text-sm leading-6 text-slate-500">把注意力放在当前动作、当前组和训练节奏上。</p>
+              <p className="text-sm leading-6 text-slate-500">把注意力放在开始、当前动作、倒计时和完成节奏上。</p>
             </div>
 
             <nav className="grid gap-2">
@@ -115,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
               <div className="rounded-2xl bg-[var(--accent-soft)] px-4 py-3 text-[var(--accent-strong)]">
                 <div className="text-xs uppercase tracking-[0.24em] text-[var(--accent-strong)]/60">训练会话</div>
-                <div className="mt-1 text-xl font-semibold">{workout ? (isWorkoutComplete ? "待保存" : "进行中") : "空闲"}</div>
+                <div className="mt-1 text-xl font-semibold">{workout ? (isWorkoutComplete ? "已完成" : isResting ? "休息中" : "进行中") : "待开始"}</div>
               </div>
             </div>
           </div>
@@ -125,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
-        <div className={cn("gap-1 px-2 py-2", hasActiveWorkout ? "grid grid-cols-2" : "grid grid-cols-5")}>
+        <div className={cn("gap-1 px-2 py-2", hasActiveWorkout ? "grid grid-cols-2" : "grid grid-cols-2")}>
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;

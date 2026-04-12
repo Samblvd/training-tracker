@@ -217,6 +217,7 @@ export function buildWorkoutSession(muscle: Muscle, exercises: ExercisePlanItem[
     setDone: 0,
     restTotal: Number.parseInt(exercises[0]?.rest || "90", 10) || 90,
     restEndAt: null,
+    currentSetStartedAt: Date.now(),
     startedAt,
     finishedAt: "",
     sessionLog: exercises.map((exercise) => ({
