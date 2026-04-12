@@ -56,16 +56,6 @@ export function WorkoutSessionView() {
     if (!workout?.startedAt || !workout?.finishedAt) return 0;
     return Math.max(0, Math.floor((new Date(workout.finishedAt).getTime() - new Date(workout.startedAt).getTime()) / 1000));
   })();
-  const autoSavedText = (() => {
-    if (!workout?.lastAutoSavedAt) return "已自动保存";
-    const diff = Math.max(0, Math.floor((effectiveNow - workout.lastAutoSavedAt) / 1000));
-    if (diff < 2) return "已自动保存";
-    if (diff < 60) return `${diff} 秒前已自动保存`;
-    const mins = Math.floor(diff / 60);
-    if (mins < 60) return `${mins} 分钟前已自动保存`;
-    return "已自动保存";
-  })();
-
   useEffect(() => {
     if (!isExerciseDone || !nextExercise) return;
     const timer = window.setTimeout(() => {
@@ -259,7 +249,6 @@ export function WorkoutSessionView() {
             <span className="rounded-full bg-slate-100 px-2.5 py-1">训练时长 {formatTimer(workoutDuration)}</span>
             <span className="rounded-full bg-slate-100 px-2.5 py-1">目标 {currentExercise?.weight || "0"}kg × {getRepInputValue(currentExercise?.reps) || currentExercise?.reps || "8"}</span>
           </div>
-          <div className="text-[11px] text-emerald-600/90 sm:text-xs">{autoSavedText}</div>
         </div>
 
         <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 sm:rounded-[24px] sm:px-5 sm:py-4">

@@ -83,13 +83,13 @@ export function PlannerEditor() {
                   { field: "sets", label: "组数", placeholder: "4" },
                   { field: "reps", label: "次数", placeholder: "8-10" },
                 ].map((item) => (
-                  <label key={item.field} className="grid gap-1 text-sm">
+                  <label key={item.field} className="grid min-w-0 gap-1 text-sm">
                     <span className="text-xs text-slate-500">{item.label}</span>
                     <input
                       value={exercise[item.field as "weight" | "sets" | "reps"]}
                       onChange={(event) => updatePlannerExercise(exercise.name, item.field as "weight" | "sets" | "reps", event.target.value)}
                       placeholder={item.placeholder}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-sm font-medium text-slate-900 outline-none transition focus:border-[var(--accent-strong)] sm:py-3 sm:text-base"
+                      className="min-w-0 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-base font-medium text-slate-900 outline-none transition focus:border-[var(--accent-strong)]"
                     />
                   </label>
                 ))}

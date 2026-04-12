@@ -25,6 +25,8 @@ function PlannerPageContent() {
   const step = selectedMuscleFromUrl ? "confirm" : "select";
 
   const hasActiveWorkout = !!workout && !workout.finishedAt;
+  const secondaryActionClass =
+    "inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs leading-none font-medium text-slate-600 whitespace-nowrap font-sans sm:min-h-11 sm:px-4 sm:py-2.5 sm:text-sm";
 
   useEffect(() => {
     if (selectedMuscleFromUrl && selectedMuscleFromUrl !== selectedMuscle) {
@@ -94,13 +96,13 @@ function PlannerPageContent() {
               <button
                 type="button"
                 onClick={() => loadDefaultPlan(selectedMuscle)}
-                className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs leading-none font-medium text-slate-600 sm:min-h-11 sm:px-4 sm:py-2.5 sm:text-sm"
+                className={secondaryActionClass}
               >
                 恢复默认
               </button>
               <Link
                 href="/planner"
-                className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs leading-none font-medium text-slate-600 sm:min-h-11 sm:px-4 sm:py-2.5 sm:text-sm"
+                className={secondaryActionClass}
               >
                 重新选部位
               </Link>
