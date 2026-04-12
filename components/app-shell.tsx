@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-slate-900">
-      <div className="mx-auto flex min-h-screen max-w-[1600px] flex-col gap-6 px-4 py-4 pb-24 md:px-6 lg:flex-row lg:gap-8 lg:px-8 lg:py-6 lg:pb-6">
+      <div className="mx-auto flex min-h-screen max-w-[1600px] flex-col gap-4 px-4 pb-24 pt-[max(env(safe-area-inset-top),0.35rem)] md:px-6 lg:flex-row lg:gap-8 lg:px-8 lg:py-6 lg:pb-6">
         <aside className="hidden w-full shrink-0 rounded-[32px] border border-white/60 bg-[radial-gradient(circle_at_top_left,rgba(241,90,34,0.16),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.94),rgba(255,250,245,0.88))] p-5 shadow-[0_32px_90px_rgba(15,23,42,0.09)] backdrop-blur lg:sticky lg:top-6 lg:flex lg:h-[calc(100vh-48px)] lg:w-[280px]">
           <div className="flex h-full flex-col gap-6">
             <div className="space-y-2">
@@ -97,7 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col gap-6 py-1 pb-20 lg:pb-0">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col gap-4 pb-20 pt-0 lg:gap-6 lg:py-1 lg:pb-0">{children}</main>
       </div>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur lg:hidden">
