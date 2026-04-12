@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Noto_Sans_SC } from "next/font/google";
 
 import { AppBootstrap } from "@/components/app-bootstrap";
@@ -18,8 +18,30 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "训练记录",
-  description: "训练记录应用",
+  title: "训练助手",
+  description: "聚焦训练进行中辅助、休息倒计时和训练记录的健身训练助手。",
+  manifest: "/manifest.webmanifest",
+  applicationName: "训练助手",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "训练助手",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icon?size=192", sizes: "192x192", type: "image/png" },
+      { url: "/icon?size=512", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f172a",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
