@@ -89,7 +89,7 @@ function PlannerPageContent() {
   }
 
   return (
-    <div className="grid gap-5 pb-28 sm:gap-6 lg:pb-0">
+    <div className="grid gap-5 pb-12 sm:gap-6 lg:pb-0">
       <section className="rounded-[32px] border border-white/80 bg-[radial-gradient(circle_at_top,rgba(241,90,34,0.10),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.99),rgba(248,250,252,0.96))] px-4 py-5 shadow-[0_28px_90px_rgba(15,23,42,0.08)] sm:rounded-[40px] sm:px-6 sm:py-8">
         <div className="grid gap-4 sm:gap-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -129,8 +129,8 @@ function PlannerPageContent() {
         <VoicePlanPanel />
       </div>
 
-      <div className="pointer-events-none fixed inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 lg:hidden">
-        <div className="pointer-events-auto rounded-[24px] border border-white/80 bg-white/94 p-2 shadow-[0_22px_52px_rgba(15,23,42,0.12)] backdrop-blur">
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+0.85rem)] z-30 -mt-2 lg:hidden">
+        <div className="rounded-[24px] border border-white/80 bg-white/94 p-2 shadow-[0_22px_52px_rgba(15,23,42,0.12)] backdrop-blur">
           <button
             type="button"
             onClick={() => {

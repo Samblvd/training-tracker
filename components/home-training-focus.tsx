@@ -74,12 +74,12 @@ export function HomeTrainingFocus() {
             </div>
           </div>
         ) : (
-          <Link
+          <a
             href="/planner"
             className="inline-flex min-h-[4.5rem] min-w-[228px] items-center justify-center rounded-full bg-[linear-gradient(180deg,#111827,#020617)] px-8 py-4 text-xl font-semibold tracking-[-0.05em] text-white shadow-[0_30px_60px_rgba(15,23,42,0.28)] transition active:translate-y-[1px] active:scale-[0.99] sm:min-h-20 sm:min-w-[280px] sm:px-10 sm:py-6 sm:text-2xl"
           >
             开始训练
-          </Link>
+          </a>
         )}
       </div>
     </section>
