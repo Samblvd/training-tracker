@@ -199,10 +199,14 @@ export function HistoryView() {
     <div className="grid gap-6">
       <PageHeading eyebrow="History" title="历史" description="查看历史训练、导入导出 JSON，并和上一次同部位训练做快速对比。" actions={
         <div className="flex gap-3">
-          <button type="button" onClick={exportJson} className="rounded-full bg-slate-950 px-4 py-2.5 text-sm font-medium text-white">
+          <button
+            type="button"
+            onClick={exportJson}
+            className="rounded-full bg-[linear-gradient(180deg,#111827,#020617)] px-4 py-2.5 text-sm font-medium text-white shadow-[0_18px_36px_rgba(15,23,42,0.18)] transition active:translate-y-[1px] active:scale-[0.99]"
+          >
             导出
           </button>
-          <label className="cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700">
+          <label className="cursor-pointer rounded-full border border-white/80 bg-white/88 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
             导入
             <input
               type="file"
@@ -219,7 +223,7 @@ export function HistoryView() {
       } />
 
       {status ? (
-        <div className="rounded-[22px] border border-dashed border-slate-300 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
+        <div className="rounded-[24px] border border-dashed border-slate-300 bg-white/78 px-4 py-3 text-sm text-slate-600 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
           {status}
         </div>
       ) : null}
@@ -231,11 +235,14 @@ export function HistoryView() {
               const exercises = getRecordExercises(record);
               const previous = getPrevRecord(records, record);
               return (
-                <div key={record.id} className="rounded-[26px] border border-slate-200 bg-slate-50/80 p-4">
+                <div
+                  key={record.id}
+                  className="rounded-[28px] border border-white/80 bg-white/90 p-4 shadow-[0_18px_38px_rgba(15,23,42,0.05)] md:p-5"
+                >
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent-strong)]">
+                        <span className="rounded-full border border-[var(--accent-strong)]/12 bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent-strong)]">
                           {record.muscle}
                         </span>
                         <span className="text-sm text-slate-500">{record.date}</span>
@@ -259,28 +266,28 @@ export function HistoryView() {
                           loadRecordIntoPlanner(record.id);
                           router.push("/planner");
                         }}
-                        className="rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                        className="rounded-full border border-white/80 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
                       >
                         编辑
                       </button>
                       <button
                         type="button"
                         onClick={() => setCompareId(compareId === record.id ? null : record.id)}
-                        className="rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                        className="rounded-full border border-white/80 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
                       >
                         对比上次
                       </button>
                       <button
                         type="button"
                         onClick={() => shareRecordImage(record)}
-                        className="rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                        className="rounded-full border border-white/80 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
                       >
                         {sharingId === record.id ? "生成中..." : "分享图片"}
                       </button>
                       <button
                         type="button"
                         onClick={() => deleteRecord(record.id)}
-                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600"
+                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600 shadow-[0_10px_24px_rgba(244,63,94,0.08)]"
                       >
                         删除
                       </button>
@@ -293,7 +300,7 @@ export function HistoryView() {
             })}
           </div>
         ) : (
-          <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center text-sm text-slate-500">
+          <div className="rounded-[26px] border border-dashed border-slate-300 bg-white/78 px-4 py-8 text-center text-sm text-slate-500 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
             暂无记录。去 <Link href="/planner" className="font-medium text-slate-950">计划</Link>
           </div>
         )}

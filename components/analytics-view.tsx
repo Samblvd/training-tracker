@@ -31,7 +31,7 @@ export function AnalyticsView() {
           <select
             value={exercise}
             onChange={(event) => setRequestedExercise(event.target.value)}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 outline-none"
+            className="rounded-full border border-white/80 bg-white/88 px-4 py-2 text-sm text-slate-700 shadow-[0_12px_28px_rgba(15,23,42,0.05)] outline-none"
           >
             {trackedNames.length ? trackedNames.map((item) => <option key={item}>{item}</option>) : <option>暂无动作数据</option>}
           </select>
@@ -45,7 +45,10 @@ export function AnalyticsView() {
                 { label: "历史最高重量", value: trendData.length ? `${formatWeightValue(bestWeight)}kg` : "-" },
                 { label: "最近训练量", value: latest ? `${formatWeightValue(latest.volume)}kg` : "-" },
               ].map((item) => (
-                <div key={item.label} className="rounded-[24px] border border-slate-200 bg-slate-50/80 px-4 py-4">
+                <div
+                  key={item.label}
+                  className="rounded-[26px] border border-white/80 bg-white/88 px-4 py-4 shadow-[0_16px_34px_rgba(15,23,42,0.05)]"
+                >
                   <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{item.label}</div>
                   <div className="mt-2 text-2xl font-semibold text-slate-950">{item.value}</div>
                 </div>
@@ -57,7 +60,10 @@ export function AnalyticsView() {
                 { title: "动作重量趋势", metric: "weight" as const, max: maxWeight, className: "chart-bar" },
                 { title: "动作训练量趋势", metric: "volume" as const, max: maxVolume, className: "chart-bar-volume" },
               ].map((chart) => (
-                <div key={chart.title} className="rounded-[24px] border border-slate-200 bg-white p-4">
+                <div
+                  key={chart.title}
+                  className="rounded-[26px] border border-white/80 bg-white/90 p-4 shadow-[0_18px_38px_rgba(15,23,42,0.05)]"
+                >
                   <div className="text-sm font-semibold text-slate-950">{chart.title}</div>
                   <div className="mt-4 flex min-h-52 items-end gap-3">
                     {trendData.length ? (
@@ -75,7 +81,7 @@ export function AnalyticsView() {
                         );
                       })
                     ) : (
-                      <div className="w-full rounded-[22px] border border-dashed border-slate-300 bg-slate-50/70 px-4 py-8 text-center text-sm text-slate-500">
+                      <div className="w-full rounded-[24px] border border-dashed border-slate-300 bg-white/78 px-4 py-8 text-center text-sm text-slate-500 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
                         还没有足够的趋势数据。
                       </div>
                     )}
@@ -85,14 +91,14 @@ export function AnalyticsView() {
             </div>
           </div>
         ) : (
-          <div className="rounded-[22px] border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center text-sm text-slate-500">
+          <div className="rounded-[24px] border border-dashed border-slate-300 bg-white/78 px-4 py-8 text-center text-sm text-slate-500 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
             还没有可分析的数据，先去记录一次训练。
           </div>
         )}
       </PanelCard>
 
       <PanelCard title="近 4 周部位频率">
-        <div className="grid gap-3">
+        <div className="grid gap-3 rounded-[26px] border border-white/80 bg-white/88 p-4 shadow-[0_18px_38px_rgba(15,23,42,0.05)]">
           {frequencyData.map((item) => (
             <div key={item.muscle} className="grid items-center gap-3 md:grid-cols-[56px_1fr_auto]">
               <div className="text-sm font-semibold text-slate-700">{item.muscle}</div>
