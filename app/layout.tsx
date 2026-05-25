@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Noto_Sans_SC } from "next/font/google";
-
-import { AppBootstrap } from "@/components/app-bootstrap";
-import { AppShell } from "@/components/app-shell";
 import "./globals.css";
 
 const notoSans = Noto_Sans_SC({
@@ -19,7 +16,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "训练助手",
-  description: "聚焦训练进行中辅助、休息倒计时和训练记录的健身训练助手。",
+  description: "组数记录、等长计时、组间休息控制。",
   manifest: "/manifest.webmanifest",
   applicationName: "训练助手",
   appleWebApp: {
@@ -27,9 +24,7 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "训练助手",
   },
-  formatDetection: {
-    telephone: false,
-  },
+  formatDetection: { telephone: false },
   icons: {
     icon: [
       { url: "/icon?size=192", sizes: "192x192", type: "image/png" },
@@ -46,15 +41,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN" className={`${notoSans.variable} ${ibmPlexMono.variable} h-full`}>
-      <body className="min-h-full font-sans antialiased">
-        <AppBootstrap />
-        <AppShell>{children}</AppShell>
-      </body>
+      <body className="min-h-full font-sans antialiased">{children}</body>
     </html>
   );
 }

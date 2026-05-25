@@ -1,5 +1,5 @@
-import { HomeTrainingFocus } from "@/components/home-training-focus";
+import { WorkoutPage } from "@/components/workout-page";
 
-export default function HomePage() {
-  return <HomeTrainingFocus />;
+export default function Page() {
+  return <WorkoutPage />;
 }
